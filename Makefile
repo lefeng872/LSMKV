@@ -4,9 +4,9 @@ CXXFLAGS = -std=c++20 -Wall
 
 all: correctness persistence
 
-correctness: kvstore.o correctness.o
+correctness: src/kvstore/kvstore.o src/tests/correctness.o
 
-persistence: kvstore.o persistence.o
+persistence: src/kvstore/kvstore.o src/tests/persistence.o
 
 clean:
 	-rm -f correctness persistence *.o

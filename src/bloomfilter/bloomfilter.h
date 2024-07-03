@@ -6,6 +6,7 @@
 #include <bitset>
 
 const uint32_t M = 8192;
+
 class BloomFilter {
 private:
     std::bitset<8 * M> s;
@@ -17,6 +18,5 @@ public:
     void insert(uint64_t key);
     bool search(uint64_t key);
 };
-
 
 #endif //LSM_KV_BloomFilter_H

@@ -8,7 +8,7 @@ The handout files include two main parts:
 
 Explanation of each handout file:
 
-<!-- ```text
+```text
 .
 ├── Makefile  // Makefile if you use GNU Make
 ├── README.md // This readme file
@@ -21,7 +21,7 @@ Explanation of each handout file:
 ├── utils.h         // Provides some file/directory interface
 ├── MurmurHash3.h  // Provides murmur3 hash function
 └── test.h         // Base class for testing, you should not modify this file
-``` -->
+```
 
 
 First have a look at the `kvstore_api.h` file to check functions you need to implement. Then modify the `kvstore.cc` and `kvstore.h` files and feel free to add new class files.

@@ -1,8 +1,8 @@
 #include "kvstore.h"
 #include <string>
 
-KVStore::KVStore(const std::string &dir, const std::string &vlog) : KVStoreAPI(dir, vlog)
-{
+KVStore::KVStore(const std::string &dir, const std::string &vlog) : KVStoreAPI(dir, vlog) {
+	skip_list_ = new SkipList(8);
 }
 
 KVStore::~KVStore()

@@ -1,20 +1,19 @@
 LINK.o = $(LINK.cc)
 CXXFLAGS = -std=c++20 -Wall
 
-BINDIR = bin
-SRCDIR = src
-TESTDIR = tests
+all: bin bin/correctness bin/persistence bin/main
 
-all: $(BINDIR)/correctness $(BINDIR)/persistence
+bin: 
+	mkdir -p bin
 
-$(BINDIR): 
-	mkdir -p $(BINDIR)
+bin/correctness: bin src/skiplist/skiplist.o src/bloomfilter/bloomfilter.o src/sstable/sstable.o src/kvstore/kvstore.o src/tests/correctness.o
+	$(LINK.o) -o bin/correctness src/skiplist/skiplist.o src/bloomfilter/bloomfilter.o src/sstable/sstable.o src/kvstore/kvstore.o src/tests/correctness.o
 
-$(BINDIR)/correctness: src/kvstore/kvstore.o src/tests/correctness.o | $(BINDIR)
-	$(CXX) $(CXXFLAGS) -o $@ src/kvstore/kvstore.o src/tests/correctness.o
+bin/persistence: bin src/skiplist/skiplist.o src/bloomfilter/bloomfilter.o src/sstable/sstable.o src/kvstore/kvstore.o src/tests/persistence.o
+	$(LINK.o) -o bin/persistence src/skiplist/skiplist.o src/bloomfilter/bloomfilter.o src/sstable/sstable.o src/kvstore/kvstore.o src/tests/persistence.o
 
-$(BINDIR)/persistence: src/kvstore/kvstore.o src/tests/persistence.o | $(BINDIR)
-	$(CXX) $(CXXFLAGS) -o $@ src/kvstore/kvstore.o src/tests/persistence.o
+bin/main: bin src/skiplist/skiplist.o src/bloomfilter/bloomfilter.o src/sstable/sstable.o src/kvstore/kvstore.o src/tests/main.o
+	$(LINK.o) -o bin/main src/skiplist/skiplist.o src/bloomfilter/bloomfilter.o src/sstable/sstable.o src/kvstore/kvstore.o src/tests/main.o
 
 clean: 
-	-rm -f $(BINDIR)/correctness $(BINDIR)/persistence src/kvstore/*.o src/tests/*.o
+	-rm -f bin/* src/*/*.o

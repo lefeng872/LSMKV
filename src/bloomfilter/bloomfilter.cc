@@ -1,4 +1,4 @@
-#include "BloomFilter.h"
+#include "bloomfilter.h"
 
 void BloomFilter::insert(uint64_t key) {
     MurmurHash3_x64_128(&key, sizeof (key), 1, hashV);

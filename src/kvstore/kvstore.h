@@ -1,11 +1,16 @@
 #pragma once
 
 #include "kvstore_api.h"
+#include "../skiplist/skiplist.h"
+#include "../sstable/sstable.h"
+#include <vector>
 
 class KVStore : public KVStoreAPI
 {
 	// You can add your implementation here
 private:
+	SkipList *skip_list_;
+	std::vector<SSTable *> sstable_list_;
 public:
 	KVStore(const std::string &dir, const std::string &vlog);
 

@@ -2,6 +2,7 @@
 #define LSM_KV_SkipList_H
 
 #include <cstdint>
+#include <climits>
 #include <vector>
 #include <string>
 #include <list>

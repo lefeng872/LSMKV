@@ -28,7 +28,7 @@ class SkipList {
 private:
     SLNode *head_;
     SLNode *tail_;
-    uint32_t bytes_; // index + value的大小
+    uint32_t size_; // list里pair的数量
     const int max_level_;
     int random_level();
 public:
@@ -63,9 +63,9 @@ public:
     void reset();
 
     /**
-     * get the current size
+     * get the corresponding sstable size
     */
-    uint32_t get_bytes();
+    uint32_t get_size();
 };
 
 

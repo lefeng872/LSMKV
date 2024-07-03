@@ -5,11 +5,11 @@
 #include <cstdint>
 #include <bitset>
 
-const uint32_t M = 8192;
+const uint32_t FILTER_MAX = 8192;
 
 class BloomFilter {
 private:
-    std::bitset<8 * M> s;
+    std::bitset<8 * FILTER_MAX> s;
     uint32_t hashV[4];
 public:
     BloomFilter() {}

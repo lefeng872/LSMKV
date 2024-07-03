@@ -6,15 +6,15 @@
 
 struct SSTableHeader {
     uint64_t timestamp;
-    uint64_t size;
+    uint64_t size; // 键值对的数量
     uint64_t min;
     uint64_t max;
 };
 
 struct SSTableTuple {
     uint64_t key;
-    uint64_t offset;
-    uint32_t v_len;
+    uint64_t offset; // value在vLog中偏移量
+    uint32_t v_len;  // 长度
 };
 
 class SSTable {

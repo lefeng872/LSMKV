@@ -102,3 +102,11 @@ void SkipList::reset() {
 uint32_t SkipList::get_size() {
     return size_;
 }
+
+void SkipList::get_content(std::vector<std::pair<uint64_t, std::string>> &content) {
+    SLNode *p = head_;
+    while (p->next_list[0] != tail_) {
+        p = p->next_list[0];
+        content.push_back(std::make_pair(p->key, p->val));
+    }
+}

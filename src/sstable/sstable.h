@@ -23,6 +23,14 @@ private:
     BloomFilter filter_;
     std::vector<SSTableTuple> tuple_list_;
 public:
+    SSTable() {
+        header_.timestamp = -1;
+        header_.size = -1;
+        header_.min = -1;
+        header_.max = -1;
+        filter_.reset();
+    }
+
     // 二分查找搜索key，通过offset从vLog文件读取键值对
     // 将SSTable缓存在内存中
 };

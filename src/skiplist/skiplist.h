@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include <list>
+#include <utility>
 
 static const std::string DEL = "~DELETED~";
 
@@ -63,9 +64,15 @@ public:
     void reset();
 
     /**
-     * get the corresponding sstable size
+     * get the num of key value pairs
     */
     uint32_t get_size();
+
+    /**
+     * @brief output the content into a sorted vector
+     * @param content
+    */
+    void get_content(std::vector<std::pair<uint64_t, std::string>> &content);
 };
 
 

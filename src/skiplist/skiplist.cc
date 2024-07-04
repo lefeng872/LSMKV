@@ -17,7 +17,7 @@ SkipList::SkipList(int max_level): max_level_(max_level) {
     for (int i = 0; i < max_level_; ++i) {
         head_->next_list[i] = tail_;
     }
-    bytes_ = 0;
+    size_ = 0;
 }
 
 SkipList::~SkipList() {
@@ -42,11 +42,9 @@ void SkipList::insert(uint64_t key, const std::string &value)
     }
     p = p->next_list[0];
     if (p->key == key) {
-        bytes_ += value.length();
-        bytes_ -= p->val.length();
         p->val = value;
     } else {
-        bytes_ += value.length();
+        size_++;
         int level = random_level();
         p = new SLNode(key, value, NORMAL, max_level_);
         for (int i = 0; i < level; ++i) {
@@ -98,9 +96,17 @@ void SkipList::reset() {
     for (int i = 0; i < max_level_; ++i) {
         head_->next_list[i] = tail_;
     }
-    bytes_ = 0;
+    size_ = 0;
 }
 
-uint32_t SkipList::get_bytes() {
-    return bytes_;
+uint32_t SkipList::get_size() {
+    return size_;
+}
+
+void SkipList::get_content(std::vector<std::pair<uint64_t, std::string>> &content) {
+    SLNode *p = head_;
+    while (p->next_list[0] != tail_) {
+        p = p->next_list[0];
+        content.push_back(std::make_pair(p->key, p->val));
+    }
 }

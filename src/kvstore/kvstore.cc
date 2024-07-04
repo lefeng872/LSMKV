@@ -1,8 +1,18 @@
 #include "kvstore.h"
 #include <string>
 
-KVStore::KVStore(const std::string &dir, const std::string &vlog) : KVStoreAPI(dir, vlog)
-{
+uint32_t KVStore::get_skip_list_bytes(SkipList *skip_list) {
+	return 32 + 8192 + skip_list->get_size() * sizeof(SSTableTuple);
+}
+
+void KVStore::flush_skip_list(SkipList *skip_list) {
+	SSTable *sstable = new SSTable();
+	std::vector<std::pair<uint64_t, std::string>> content;
+	skip_list->get_content(content);
+}
+
+KVStore::KVStore(const std::string &dir, const std::string &vlog) : KVStoreAPI(dir, vlog) {
+	skip_list_ = new SkipList(8);
 }
 
 KVStore::~KVStore()

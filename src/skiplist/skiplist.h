@@ -8,8 +8,6 @@
 #include <list>
 #include <utility>
 
-static const std::string DEL = "~DELETED~";
-
 enum TYPE {
     HEAD = 1,
     NORMAL,
@@ -45,11 +43,9 @@ public:
     void insert(uint64_t key, const std::string &value);
 
     /**
-     * try to find the value mapped to key
+     * @brief get the value mapped to key(doesn't care ~DELETED~), "" if nothing
      * @param key
-     * @return The value associated with the key, or an 
-     * empty string if the key is not finded, or DEL if 
-     * the key is deleted
+     * @return The value associated with the key
     */
     std::string search(uint64_t key);
 

@@ -6,13 +6,16 @@
 #include "../vlog/vlog.h"
 #include <vector>
 
+static const std::string DEL = "~DELETED~";
+static const int KB = 1024;
+
 class KVStore : public KVStoreAPI
 {
 	// You can add your implementation here
 private:
 	SkipList *skip_list_;
-	std::vector<SSTable *> sstable_list_;
-	VLog *v_log;
+	std::vector<std::vector<SSTable *>> sstable_list_;
+	VLog *v_log_;
 
 	uint64_t global_timestamp;  // the latest sstable timestamp
 
@@ -22,12 +25,6 @@ private:
 	*/
 	uint32_t get_skip_list_bytes(SkipList *skip_list);
 
-	/**
-	 * @brief allocate and construct a new sstable according to skip_list
-	 * @param skip_list
-	 * @return point to the new allocated sstable
-	*/
-	void flush_skip_list(SkipList * skip_list);
 public:
 	KVStore(const std::string &dir, const std::string &vlog);
 

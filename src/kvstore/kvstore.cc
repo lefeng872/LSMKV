@@ -5,12 +5,6 @@ uint32_t KVStore::get_skip_list_bytes(SkipList *skip_list) {
 	return 32 + 8192 + skip_list->get_size() * sizeof(SSTableTuple);
 }
 
-void KVStore::flush_skip_list(SkipList *skip_list) {
-	SSTable *sstable = new SSTable();
-	std::vector<std::pair<uint64_t, std::string>> content;
-	skip_list->get_content(content);
-}
-
 KVStore::KVStore(const std::string &dir, const std::string &vlog) : KVStoreAPI(dir, vlog) {
 	skip_list_ = new SkipList(8);
 }
@@ -23,8 +17,23 @@ KVStore::~KVStore()
  * Insert/Update the key-value pair.
  * No return values for simplicity.
  */
-void KVStore::put(uint64_t key, const std::string &s)
-{
+void KVStore::put(uint64_t key, const std::string &s) {
+	if (get_skip_list_bytes(this->skip_list_) + s.length() <= 16 * KB) {
+		skip_list_->insert(key, s);
+	} else {
+		SSTable *sstable = new SSTable();
+		sstable->flush_skip_list(skip_list_, v_log_);
+		sstable->set_timestamp(this->global_timestamp);
+		this->global_timestamp++;
+		sstable_list_[0].push_back(sstable);
+		if (sstable_list_[0].size() > 2) {
+			// todo run compaction
+		}
+		// todo update disk (maybe with timestamp?)
+		// write sstable to disk too, and add it to vector
+		this->skip_list_->reset();
+		this->skip_list_->insert(key, s);
+	}
 }
 /**
  * Returns the (string) value of the given key.
@@ -40,7 +49,13 @@ std::string KVStore::get(uint64_t key)
  */
 bool KVStore::del(uint64_t key)
 {
-	return false;
+	std::string value = get(key);
+	if (value == "") {
+		return false;
+	} else {
+		put(key, DEL);
+		return true;
+	}
 }
 
 /**

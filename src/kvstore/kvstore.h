@@ -4,6 +4,7 @@
 #include "../skiplist/skiplist.h"
 #include "../sstable/sstable.h"
 #include "../vlog/vlog.h"
+#include <stdio.h>
 #include <vector>
 
 static const std::string DEL = "~DELETED~";
@@ -25,6 +26,17 @@ private:
 	*/
 	uint32_t get_skip_list_bytes(SkipList *skip_list);
 
+	/**
+	 * @brief run compaction for sstables
+	 * @return the deepest level that is modified and need to be rewriten
+	*/
+	uint32_t run_compaction();
+
+	/**
+	 * @brief flush the modified sstables into disk
+	 * @param level, the deepest level need to be flushed
+	*/
+	void flush_sstable(uint32_t level);
 public:
 	KVStore(const std::string &dir, const std::string &vlog);
 

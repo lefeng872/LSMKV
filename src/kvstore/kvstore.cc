@@ -1,8 +1,45 @@
 #include "kvstore.h"
 #include <string>
+#include <filesystem>
+#include <fstream>
 
 uint32_t KVStore::get_skip_list_bytes(SkipList *skip_list) {
 	return 32 + 8192 + skip_list->get_size() * sizeof(SSTableTuple);
+}
+
+uint32_t KVStore::run_compaction() {
+	return 0;
+}
+
+void clear_directory(const std::filesystem::path& dir_path) {
+    try {
+        if (!std::filesystem::exists(dir_path)) {
+			std::filesystem::create_directory(dir_path);
+            return;
+        }
+        for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
+            std::filesystem::remove(entry);
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        // who cares what you have to say...
+    }
+}
+
+void KVStore::flush_sstable(uint32_t level) {
+	for (int i = 0; i <= level; ++i) {
+		std::filesystem::path directory_path = "/data/sstable/level-" + std::to_string(i);
+        clear_directory(directory_path);
+		for (int j = 0; j < sstable_list_[i].size(); ++j) {
+			std::string filename = "/data/sstable/level-" + std::to_string(i) + "/" + std::to_string(j) + ".sst";
+			std::ofstream file(filename);
+			if (file.is_open()) {
+            	SSTable *table = sstable_list_[i][j];
+				// todo
+            	file.close();
+        	}
+		}
+	}
+	return;
 }
 
 KVStore::KVStore(const std::string &dir, const std::string &vlog) : KVStoreAPI(dir, vlog) {
@@ -26,11 +63,11 @@ void KVStore::put(uint64_t key, const std::string &s) {
 		sstable->set_timestamp(this->global_timestamp);
 		this->global_timestamp++;
 		sstable_list_[0].push_back(sstable);
+		uint32_t level = 0;
 		if (sstable_list_[0].size() > 2) {
-			// todo run compaction
+			level = run_compaction();
 		}
-		// todo update disk (maybe with timestamp?)
-		// write sstable to disk too, and add it to vector
+		flush_sstable(level);
 		this->skip_list_->reset();
 		this->skip_list_->insert(key, s);
 	}

@@ -32,3 +32,12 @@ For the test files, of course you could modify it to debug your programs. But re
 
 Good luck :)
 
+### About docker
+- You can create multiple containers based on the same Docker image.
+---
+- First launch Docker desktop
+- list all containers `docker ps -a`
+- list all image `docker images`
+- build an image based on DockerFile (in . directory)`docker build -t lsmkv_image .`
+- create container `docker create -t -i --privileged --name lsmkv -v $(pwd):/home/stu/LSMKV lsmkv_image bash`
+- start container `docker start -a -i lsmkv`

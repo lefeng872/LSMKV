@@ -1,6 +1,8 @@
 #include "../kvstore/kvstore.h"
 
 int main() {
-    KVStore kvstore("cat", "cat");
-    printf("yes fuck you");
+    FILE *file = fopen("data/vlog/test", "w");
+    fprintf(file, "Hello, world!\n");
+    fprintf(file, "This is a test file.\n");
+    fclose(file);
 }

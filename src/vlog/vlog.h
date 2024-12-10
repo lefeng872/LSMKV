@@ -2,6 +2,7 @@
 #define LSM_KV_VLog_H
 
 #include <string>
+#include <vector>
 
 struct VLogEntry {
     const uint8_t magic = 0xff;

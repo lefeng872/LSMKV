@@ -41,3 +41,81 @@ Good luck :)
 - build an image based on DockerFile (in . directory)`docker build -t lsmkv_image .`
 - create container `docker create -t -i --privileged --name lsmkv -v $(pwd):/home/stu/LSMKV lsmkv_image bash`
 - start container `docker start -a -i lsmkv`
+- git rm --cached
+
+### Overview
+Here is the the architechture of this KVStore system.
+
+![](image/overview.png)
+
+It mainly consists of three part:
+- MemTable in memory, implemented with skiplist.
+- SSTables on disk, including headers, bloomfilters, keys and offsets.
+- VLog on disk, storing values.
+
+### Multi records on the same key
+Suppose we have two record, A(key1, value1), B(key1, value2). And I divide my storage system into following hierarchy
+- skiplist
+- level-0
+- level-x (x > 0)
+
+if A and B appeared in different classes, we assert updated order as: $$skiplist > level_0 > level_x$$
+if A and B both appeared in level-0, their belonging sstables must have different timestamps.
+
+if A and B both appeared in level-x, note sstables in the same level x don't intersect, and therefore the upper level (smaller index) record always win.
+(compation always push down the oldest sstables, the only exception is when there are several equally oldest timestamps, the sstable with the smallest key is chosen, but since these same timestamp tables don't intersect in their keys, so we don't need to consider them with regard to records with the same key)
+
+### Basic operations
+PUT(Key, Value)
+```pseudo
+if key already exists in memTable then
+    update value
+    return
+
+if memtable is full then
+    flush memtable to disk(write vlog, generate sstable)
+    compaction()
+
+insert new pair to skiplist
+```
+GET(Key)
+```pseudo
+if key exists in memTable then
+    return value
+
+for i = 0 to maxLevel do
+    for sstables in level-i do
+        if key exists in filter then
+            if binary search found key then
+                value := lookupVlog()
+                return value
+
+return "Don't exists"
+```
+DEL(Key)
+```pseudo
+if GET(Key) not found then
+    return false
+else
+    PUT(Key, "~DELETED~")
+# Notice no need for writing "~DELETED~" into vlog, just set vlen=0
+# In last level compaction, record with vlen=0 should be thrown away
+```
+SCAN(K1, K2), return a `std::list<K, V>`
+```pseudo
+```
+RESET()
+- rm sstables and level dir
+- rm vlog
+- rm memtable and cache
+
+KVStore()
+- lookup sstables, build up cache
+- restore head and tail for vlog
+    - head: file size
+    - tail: after hole, find magic, crc pass
+
+~KVStore()
+- flush memtalbe
+
+GC()

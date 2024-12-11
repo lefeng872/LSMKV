@@ -31,44 +31,48 @@ private:
     const int max_level_;
     int random_level();
 public:
-    SkipList(int max_level);
-
-    ~SkipList();
-
     /**
-     * insert a new key-value pair
+     * set a new key-value pair,
+     * if key already exists, update value,
+     * else create new pair.
      * @param key
      * @param value
     */
     void insert(uint64_t key, const std::string &value);
 
     /**
-     * @brief get the value mapped to key(doesn't care ~DELETED~), "" if nothing
-     * @param key
-     * @return The value associated with the key
+     * clear all data and reset size to 0
     */
-    std::string search(uint64_t key);
+    void clear();
+
+    /**
+     * get the num of key value pairs
+     * @return size
+    */
+    uint32_t get_size() const;
+
+    /**
+     * get the value mapped to key, if this key is not in list, return "~SkipListNotFound~"
+     * @param key
+     * @return The value map to the given key
+    */
+    std::string search(uint64_t key) const;
 
     /**
      * print this list
     */
-    void display();
+    void display() const;
 
     /**
-     * reset
+     * output the content into a sorted vector
+     * @param content the vector to be filled
     */
-    void reset();
+    void get_content(std::vector<std::pair<uint64_t, std::string>> &content) const;
 
-    /**
-     * get the num of key value pairs
-    */
-    uint32_t get_size();
+    SkipList(int max_level);
 
-    /**
-     * @brief output the content into a sorted vector
-     * @param content
-    */
-    void get_content(std::vector<std::pair<uint64_t, std::string>> &content);
+    ~SkipList();
+
 };
 
 

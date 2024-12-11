@@ -16,7 +16,7 @@ struct SSTableHeader {
 struct SSTableTuple {
     uint64_t key;
     uint64_t offset; // value在vLog中偏移量
-    uint32_t v_len;  // 长度
+    uint32_t v_len;  // value的长度
     SSTableTuple(uint64_t key, uint64_t offset, uint32_t v_len) {
         this->key = key;
         this->offset = offset;

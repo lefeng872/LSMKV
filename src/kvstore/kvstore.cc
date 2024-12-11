@@ -44,6 +44,7 @@ void KVStore::flush_sstable(uint32_t level) {
 
 KVStore::KVStore(const std::string &dir, const std::string &vlog) : KVStoreAPI(dir, vlog) {
 	skip_list_ = new SkipList(8);
+	// todo read sstable and v_log
 }
 
 KVStore::~KVStore()

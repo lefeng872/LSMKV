@@ -2,8 +2,7 @@
 #include <cstdlib>
 #include <iostream>
 
-int SkipList::random_level()
-{
+int SkipList::random_level() {
     int result = 1;
     while (result < max_level_ && ((double)rand() / RAND_MAX) < 0.5) {
         ++result;
@@ -30,8 +29,7 @@ SkipList::~SkipList() {
     }
 }
 
-void SkipList::insert(uint64_t key, const std::string &value)
-{
+void SkipList::insert(uint64_t key, const std::string &value) {
     SLNode *p = head_;
     std::vector<SLNode *> update(max_level_, nullptr);
     for (int i = max_level_ - 1; i >= 0; --i) {
@@ -54,8 +52,7 @@ void SkipList::insert(uint64_t key, const std::string &value)
     }
 }
 
-std::string SkipList::search(uint64_t key)
-{
+std::string SkipList::search(uint64_t key) const {
     SLNode *p = head_;
     for (int i = max_level_ - 1; i >= 0; --i) {
         while (p->next_list[i]->key < key) {
@@ -66,12 +63,11 @@ std::string SkipList::search(uint64_t key)
     if (p->key == key) {
         return p->val;
     } else {
-        return "";
+        return "~SkipListNotFound~";
     }
 }
 
-void SkipList::display()
-{
+void SkipList::display() const {
     for (int i = max_level_ - 1; i >= 0; --i)
     {
         std::cout << "Level " << i + 1 << ":h";
@@ -80,12 +76,11 @@ void SkipList::display()
             std::cout << "-->(" << node->key << "," << node->val << ")";
             node = node->next_list[i];
         }
-
         std::cout << "-->N" << std::endl;
     }
 }
 
-void SkipList::reset() {
+void SkipList::clear() {
     if (head_->next_list[0] == tail_) return;
     SLNode *n1 = head_->next_list[0], *n2;
     while (n1 != tail_) {
@@ -99,11 +94,11 @@ void SkipList::reset() {
     size_ = 0;
 }
 
-uint32_t SkipList::get_size() {
+uint32_t SkipList::get_size() const {
     return size_;
 }
 
-void SkipList::get_content(std::vector<std::pair<uint64_t, std::string>> &content) {
+void SkipList::get_content(std::vector<std::pair<uint64_t, std::string>> &content) const {
     SLNode *p = head_;
     while (p->next_list[0] != tail_) {
         p = p->next_list[0];

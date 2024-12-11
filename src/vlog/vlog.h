@@ -14,10 +14,11 @@ struct VLogEntry {
 
 class VLog {
 private:
-    std::string file_name_;
-    uint64_t head_;
+    std::string filename_;
     uint64_t tail_;
 public:
+
+    VLog(std::string _filename);
     /**
      * @brief append a list of key-value pairs to vLog file
      * @return offset of start

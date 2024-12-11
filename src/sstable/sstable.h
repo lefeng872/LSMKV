@@ -30,23 +30,7 @@ private:
     BloomFilter filter_;
     std::vector<SSTableTuple> tuple_list_;
 public:
-    SSTable() {
-        header_.timestamp = 0;
-        header_.size = 0;
-        header_.min = UINT64_MAX;
-        header_.max = 0;
-        filter_.reset();
-    }
-
-    /**
-	 * @brief store the values of skip_list to vlog,
-	 * and fill in sstable except for the timestamp
-	*/
-    SSTable *flush_skip_list(SkipList *skip_list, VLog *v_log);
-
-    void set_timestamp(uint64_t timestamp) {
-        this->header_.timestamp = timestamp;
-    }
+    SSTable(uint64_t _timestamp, uint64_t _offset, std::vector<std::pair<uint64_t, std::string>> &content);
 
     // 二分查找搜索key，通过offset从vLog文件读取键值对
     // 将SSTable缓存在内存中

@@ -12,3 +12,15 @@ SSTable::SSTable(uint64_t _timestamp, uint64_t _offset, std::vector<std::pair<ui
 		_offset += pair.second.length() + 1 + 2 + 8 + 4;
     }
 }
+
+SSTable::SSTable(std::ifstream &in) {
+	in.read(reinterpret_cast<char *> (&header_.timestamp), 8);
+	in.read(reinterpret_cast<char *> (&header_.size), 8);
+	in.read(reinterpret_cast<char *> (&header_.min), 8);
+	in.read(reinterpret_cast<char *> (&header_.max), 8);
+	in.read(reinterpret_cast<char *> (&filter_.bitset_), FILENAME_MAX);
+	SSTableTuple tuple;
+	while (in.read(reinterpret_cast<char *> (&tuple), sizeof(tuple))) {
+		tuple_list_.push_back(SSTableTuple(tuple.key, tuple.offset, tuple.v_len));
+	}
+}

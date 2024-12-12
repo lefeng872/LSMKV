@@ -2,6 +2,7 @@
 #define LSM_KV_SSTable_H
 
 #include <vector>
+#include <fstream>
 #include "../bloomfilter/bloomfilter.h"
 #include "../skiplist/skiplist.h"
 #include "../vlog/vlog.h"
@@ -17,6 +18,8 @@ struct SSTableTuple {
     uint64_t key;
     uint64_t offset; // value在vLog中偏移量
     uint32_t v_len;  // value的长度
+
+    SSTableTuple() {}
 
     /**
      * Generate a SSTable from MemTable
@@ -35,6 +38,8 @@ private:
     std::vector<SSTableTuple> tuple_list_;
 public:
     SSTable(uint64_t _timestamp, uint64_t _offset, std::vector<std::pair<uint64_t, std::string>> &content);
+
+    SSTable(std::ifstream &in);
 
     // 二分查找搜索key，通过offset从vLog文件读取键值对
     // 将SSTable缓存在内存中

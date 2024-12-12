@@ -4,11 +4,13 @@
 #include "../skiplist/skiplist.h"
 #include "../sstable/sstable.h"
 #include "../vlog/vlog.h"
+#include "../utils/utils.h"
 #include <stdio.h>
 #include <vector>
 
-static const std::string DEL = "~DELETED~";
 static const int KB = 1024;
+
+#define PAGE_SIZE (16 * 1024)
 
 class KVStore : public KVStoreAPI
 {
@@ -31,28 +33,24 @@ public:
 	void gc(uint64_t chunk_size) override;
 
 private:
+	std::string dir_;
+	std::string vlog_;
 	SkipList *skip_list_;
-	std::vector<std::vector<SSTable *>> sstable_list_;
+	std::vector<std::vector<SSTable *>> sstable_buffer;
 	VLog *v_log_;
 
 	uint64_t global_timestamp;  // the latest sstable timestamp
 
 	/**
 	 * SSTable must not larger than 16kb,
-	 * must judge does this memTable need to flush first
+	 * must check does this memTable need to flush first
 	 * before storing a new pair.
 	*/
 	uint32_t memTable_need_flush();
 
 	/**
-	 * @brief run compaction for sstables
+	 * @brief run compaction
 	 * @return the deepest level that is modified and need to be rewriten
 	*/
 	uint32_t run_compaction();
-
-	/**
-	 * @brief flush the modified sstables into disk
-	 * @param level, the deepest level need to be flushed
-	*/
-	void flush_sstable(uint32_t level);
 };

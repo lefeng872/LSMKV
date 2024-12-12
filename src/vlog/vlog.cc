@@ -61,7 +61,7 @@ uint64_t VLog::append(const std::vector<std::pair<uint64_t, std::string>> &conte
         out.write(reinterpret_cast<const char *>(&entry.check_sum), sizeof(entry.check_sum));
         out.write(reinterpret_cast<const char *>(&entry.key), sizeof(entry.key));
         out.write(reinterpret_cast<const char *>(&entry.v_len), sizeof(entry.v_len));
-        out.write(entry.value.c_str(), entry.value.length());
+        out.write(entry.value.c_str(), entry.v_len);
     }
     out.close();
     return offset;

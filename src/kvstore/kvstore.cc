@@ -1,54 +1,44 @@
 #include "kvstore.h"
 #include <string>
-#include <filesystem>
 #include <fstream>
-
-uint32_t KVStore::memTable_need_flush() {
-	return 32 + 8192 + (this->skip_list_->get_size() + 1) * sizeof(SSTableTuple) > 16kb;
-}
-
-uint32_t KVStore::run_compaction() {
-	return 0;
-} 
-
-void clear_directory(const std::filesystem::path& dir_path) {
-    try {
-        if (!std::filesystem::exists(dir_path)) {
-			std::filesystem::create_directory(dir_path);
-            return;
-        }
-        for (const auto& entry : std::filesystem::directory_iterator(dir_path)) {
-            std::filesystem::remove(entry);
-        }
-    } catch (const std::filesystem::filesystem_error& e) {
-        // who cares what you have to say...
-    }
-}
-
-void KVStore::flush_sstable(uint32_t level) {
-	for (int i = 0; i <= level; ++i) {
-		std::filesystem::path directory_path = "/data/sstable/level-" + std::to_string(i);
-        clear_directory(directory_path);
-		for (int j = 0; j < sstable_list_[i].size(); ++j) {
-			std::string filename = "/data/sstable/level-" + std::to_string(i) + "/" + std::to_string(j) + ".sst";
-			std::ofstream file(filename);
-			if (file.is_open()) {
-            	SSTable *table = sstable_list_[i][j];
-				// todo
-            	file.close();
-        	}
-		}
-	}
-	return;
-}
+#include <vector>
 
 KVStore::KVStore(const std::string &dir, const std::string &vlog) : KVStoreAPI(dir, vlog) {
+	dir_ = dir;
+	vlog_ = vlog;
 	skip_list_ = new SkipList(8);
-	// todo read sstable and v_log
+	v_log_ = new VLog(vlog);
+	std::vector<std::string> sst_directory_list;
+	utils::scanDir(dir_, sst_directory_list);
+	for (size_t i = 0; i < sst_directory_list.size(); ++i) {
+		std::string level_dir = sst_directory_list[i];
+		std::vector<std::string> sst_filename_list;
+		utils::scanDir(dir_ + "/" + level_dir, sst_filename_list);
+		std::vector<SSTable *> sstable_list;
+		for (size_t j = 0; j < sst_filename_list.size(); ++j) {
+			std::ifstream in;
+			in.open(dir_ + "/" + level_dir + "/" + sst_filename_list[j], std::ios::binary);
+			SSTable *sstable = new SSTable(in);
+			in.close();
+			sstable_list.push_back(sstable);
+		}
+		sstable_buffer.push_back(sstable_list);
+	}
 }
 
-KVStore::~KVStore()
-{
+KVStore::~KVStore() {
+	if (this->skip_list_->get_size() != 0) {
+		run_compaction();
+	}
+	delete this->skip_list_;
+	delete this->v_log_;
+	for (auto &sstable_list : sstable_buffer) {
+        for (auto *sstable : sstable_list) {
+        	delete sstable; 
+        }
+        sstable_list.clear();
+    }
+    sstable_buffer.clear();
 }
 
 /**
@@ -56,23 +46,16 @@ KVStore::~KVStore()
  * No return values for simplicity.
  */
 void KVStore::put(uint64_t key, const std::string &s) {
-	if (get_skip_list_bytes(this->skip_list_) + s.length() <= 16 * KB) {
-		skip_list_->insert(key, s);
-	} else {
-		SSTable *sstable = new SSTable();
-		sstable->flush_skip_list(skip_list_, v_log_);
-		sstable->set_timestamp(this->global_timestamp);
-		this->global_timestamp++;
-		sstable_list_[0].push_back(sstable);
-		uint32_t level = 0;
-		if (sstable_list_[0].size() > 2) {
-			level = run_compaction();
-		}
-		flush_sstable(level);
-		this->skip_list_->reset();
+	if (this->skip_list_->search(key) != "~SkipListNotFound~") {
 		this->skip_list_->insert(key, s);
+		return;
 	}
+	if (this->memTable_need_flush()) {
+		run_compaction();
+	}
+	this->skip_list_->insert(key, s);
 }
+
 /**
  * Returns the (string) value of the given key.
  * An empty string indicates not found.
@@ -81,6 +64,7 @@ std::string KVStore::get(uint64_t key)
 {
 	return "";
 }
+
 /**
  * Delete the given key-value pair if it exists.
  * Returns false iff the key is not found.
@@ -91,7 +75,7 @@ bool KVStore::del(uint64_t key)
 	if (value == "") {
 		return false;
 	} else {
-		put(key, DEL);
+		put(key, "");
 		return true;
 	}
 }
@@ -100,8 +84,7 @@ bool KVStore::del(uint64_t key)
  * This resets the kvstore. All key-value pairs should be removed,
  * including memtable and all sstables files.
  */
-void KVStore::reset()
-{
+void KVStore::reset() {
 }
 
 /**
@@ -119,4 +102,12 @@ void KVStore::scan(uint64_t key1, uint64_t key2, std::list<std::pair<uint64_t, s
  */
 void KVStore::gc(uint64_t chunk_size)
 {
+}
+
+uint32_t KVStore::memTable_need_flush() {
+	return 32 + 8192 + (this->skip_list_->get_size() + 1) * sizeof(SSTableTuple) > PAGE_SIZE;
+}
+
+uint32_t KVStore::run_compaction() {
+	return 0;
 }

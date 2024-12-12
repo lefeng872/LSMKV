@@ -12,7 +12,12 @@ struct VLogEntry {
     uint32_t v_len;
     std::string value;
 
-    VLogEntry() {}
+    VLogEntry() {
+        check_sum = 0;
+        key = 0;
+        v_len = 0;
+        value = "";
+    }
 
     VLogEntry(uint64_t _key, std::string _value) {
         key = _key;
@@ -29,11 +34,18 @@ struct VLogEntry {
     }
 
     bool check() {
-
+        std::vector<unsigned char> data;
+        unsigned char *key_bytes = reinterpret_cast<unsigned char *>(&key);
+        data.insert(data.end(), key_bytes, key_bytes + sizeof(key));
+        unsigned char *vlen_bytes = reinterpret_cast<unsigned char *>(&v_len);
+        data.insert(data.end(), vlen_bytes, vlen_bytes + sizeof(v_len));
+        unsigned char *value_bytes = reinterpret_cast<unsigned char *>(&value);
+        data.insert(data.end(), value_bytes, value_bytes + sizeof(value));
+        return check_sum == utils::crc16(data);
     }
 
     uint64_t size() {
-        return sizeof(magic) + sizeof(check_sum) + sizeof(key) + sizeof(v_len) + value.length();
+        return sizeof(magic) + sizeof(check_sum) + sizeof(key) + sizeof(v_len) + v_len;
     }
 };
 
@@ -52,6 +64,12 @@ public:
     */
     uint64_t append(const std::vector<std::pair<uint64_t, std::string>> &content);
 
+    /**
+     * @brief read a value with given offset and len
+     * @param offset
+     * @param len
+     * @return value
+     */
     std::string read_value(uint64_t offset, uint32_t len);
 };
 

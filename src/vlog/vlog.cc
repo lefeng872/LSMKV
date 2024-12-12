@@ -13,14 +13,14 @@ VLog::VLog(std::string _filename) {
         this->tail_ = 0;
         return;
     }
-    // todo find tail
     this->tail_ = utils::seek_data_block(this->filename_);  // non-hole file region
     in.seekg(tail_);
     while (true) {
         VLogEntry entry;
         uint64_t result = read_vlog_entry(in, &entry);
         if (!result) {
-            printf("Failed to read entry");
+            printf("no entry, empty vlog");
+            in.close();
             return;
         }
         if (entry.check()) {
@@ -29,6 +29,26 @@ VLog::VLog(std::string _filename) {
         this->tail_ += entry.size();
     }
     in.close();
+}
+
+uint64_t VLog::read_vlog_entry(std::ifstream &in, VLogEntry *vlog_entry) {
+    char byte = 0;
+    while (byte != 0xff) {
+        in.read(&byte, 1);
+        if (in.eof()) {
+            return 0;
+        }
+    }
+    in.read(reinterpret_cast<char *> (&vlog_entry->check_sum), sizeof(vlog_entry->check_sum));
+    in.read(reinterpret_cast<char *> (&vlog_entry->key), sizeof(vlog_entry->key));
+    in.read(reinterpret_cast<char *> (&vlog_entry->v_len), sizeof(vlog_entry->v_len));
+    uint64_t value_offset = in.tellg();
+    char *value_str = new char[vlog_entry->v_len + 1];
+    value_str[vlog_entry->v_len] = '\0';
+    in.read(value_str, vlog_entry->v_len);
+    vlog_entry->value = std::string(value_str);
+    delete [] value_str;
+    return value_offset;
 }
 
 uint64_t VLog::append(const std::vector<std::pair<uint64_t, std::string>> &content) {
@@ -48,5 +68,18 @@ uint64_t VLog::append(const std::vector<std::pair<uint64_t, std::string>> &conte
 }
 
 std::string VLog::read_value(uint64_t offset, uint32_t len) {
-    return "";
+    std::ifstream in;
+    in.open(this->filename_, std::ios::binary);
+    if (!in) {
+        return "";
+    }
+    in.seekg(offset);
+    std::string value = "";
+    char *value_str = new char [len + 1];
+    value_str[len] = '\0';
+    in.read(value_str, len);
+    value = std::string(value_str);
+    delete [] value_str;
+    in.close();
+    return value;
 }

@@ -38,10 +38,11 @@ private:
 	uint64_t global_timestamp;  // the latest sstable timestamp
 
 	/**
-	 * @param skip_list
-	 * @return the byte size of the coresponding sstable of this current skip_list
+	 * SSTable must not larger than 16kb,
+	 * must judge does this memTable need to flush first
+	 * before storing a new pair.
 	*/
-	uint32_t get_skip_list_bytes(SkipList *skip_list);
+	uint32_t memTable_need_flush();
 
 	/**
 	 * @brief run compaction for sstables

@@ -3,13 +3,13 @@
 #include <filesystem>
 #include <fstream>
 
-uint32_t KVStore::get_skip_list_bytes(SkipList *skip_list) {
-	return 32 + 8192 + skip_list->get_size() * sizeof(SSTableTuple);
+uint32_t KVStore::memTable_need_flush() {
+	return 32 + 8192 + (this->skip_list_->get_size() + 1) * sizeof(SSTableTuple) > 16kb;
 }
 
 uint32_t KVStore::run_compaction() {
 	return 0;
-}
+} 
 
 void clear_directory(const std::filesystem::path& dir_path) {
     try {

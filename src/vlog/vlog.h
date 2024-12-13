@@ -71,6 +71,8 @@ public:
      * @return value
      */
     std::string read_value(uint64_t offset, uint32_t len);
+
+    void reset();
 };
 
 #endif //LSM_KV_VLog_H

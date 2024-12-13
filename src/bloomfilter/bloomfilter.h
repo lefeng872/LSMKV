@@ -16,7 +16,7 @@ public:
     ~BloomFilter() {}
     void reset() {bitset_.reset();}
     void insert(uint64_t key);
-    bool search(uint64_t key);
+    bool search(uint64_t key) const;
 };
 
 #endif //LSM_KV_BloomFilter_H

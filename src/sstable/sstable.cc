@@ -66,3 +66,25 @@ void SSTable::write_sstable(std::ofstream &out) {
 std::vector<SSTableTuple> SSTable::get_content() const {
 	return tuple_list_;
 }
+
+bool SSTable::check_filter(uint64_t _key) const {
+	return this->filter_.search(_key);
+}
+
+void SSTable::search(uint64_t _key, uint64_t *_offset, uint32_t *_v_len) const {
+	uint32_t left = 0;
+	uint32_t right = tuple_list_.size();
+	while (left < right) {
+		uint32_t mid = (left + right) >> 1;
+		if (_key < tuple_list_[mid].key) {
+			right = mid;
+		} else if (_key > tuple_list_[mid].key) {
+			left = mid + 1;
+		} else {
+			*_offset = tuple_list_[mid].offset;
+			*_v_len = tuple_list_[mid].v_len;
+		}
+	}
+	*_offset = 0;
+	*_v_len = 0;
+}

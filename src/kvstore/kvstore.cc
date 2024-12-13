@@ -10,6 +10,7 @@ KVStore::KVStore(const std::string &dir, const std::string &vlog) : KVStoreAPI(d
 	vlog_path_ = vlog;
 	skip_list_ = new SkipList(8);
 	v_log_ = new VLog(vlog_path_);
+	global_timestamp = 0;
 	std::vector<std::string> sst_directory_list;
 	utils::scanDir(sstable_dir_path_, sst_directory_list);
 	for (size_t i = 0; i < sst_directory_list.size(); ++i) {
@@ -23,10 +24,10 @@ KVStore::KVStore(const std::string &dir, const std::string &vlog) : KVStoreAPI(d
 			SSTable *sstable = new SSTable(in);
 			in.close();
 			sstable_list.push_back(sstable);
+			global_timestamp = std::max(sstable->get_timestamp(), global_timestamp);
 		}
 		sstable_buffer.push_back(sstable_list);
 	}
-	// todo restore global timestamp
 }
 
 KVStore::~KVStore() {
@@ -65,8 +66,24 @@ void KVStore::put(uint64_t key, const std::string &s) {
  */
 std::string KVStore::get(uint64_t key)
 {
-	// todo
-	return "";
+	std::string value = this->skip_list_->search(key);
+	if (value == "~SkipListNotFound~") {
+		for (auto level_sstable_list: sstable_buffer) {
+			for (SSTable *sstable: level_sstable_list) {
+				if (sstable->get_min() <= key && sstable->get_max() >= key && sstable->check_filter(key)) {
+					uint64_t offset = 0;
+					uint32_t v_len = 0;
+					sstable->search(key, &offset, &v_len);
+					if (v_len) {
+						return this->v_log_->read_value(offset, v_len);
+					}
+				}
+			}
+		}
+		return "";
+	} else {
+		return value;
+	}
 }
 
 /**
@@ -89,7 +106,29 @@ bool KVStore::del(uint64_t key)
  * including memtable and all sstables files.
  */
 void KVStore::reset() {
-	// todo
+	this->skip_list_->clear();
+	for (auto level_sstable_list: this->sstable_buffer) {
+		for (SSTable *sstable: level_sstable_list) {
+			delete sstable;
+		}
+		level_sstable_list.clear();
+	}
+	this->sstable_buffer.clear();
+	this->v_log_->reset();
+	std::vector<std::string> sst_directory_list;
+	utils::scanDir(this->sstable_dir_path_, sst_directory_list);
+	for (std::string level_dir: sst_directory_list) {
+		std::vector<std::string> sst_file_list;
+		utils::scanDir(level_dir, sst_file_list);
+		for (std::string sst_filename: sst_file_list) {
+			utils::rmfile(sstable_dir_path_ + "/" + level_dir + "/" + sst_filename);
+		}
+		utils::rmdir(sstable_dir_path_ + "/" + level_dir);
+	}
+	utils::rmfile(vlog_path_);
+	std::ofstream out;
+    out.open(this->vlog_path_, std::ios::binary);
+    out.close();
 }
 
 /**
@@ -126,6 +165,9 @@ void KVStore::flush_memTable() {
 	SSTable *sstable = new SSTable(global_timestamp, start_offset, content);
 	global_timestamp++;
 	// write sstable
+	if (!utils::dirExists(sstable_dir_path_ + "/level-0")) {
+		utils::mkdir(sstable_dir_path_ + "/level-0");
+	}
 	std::ofstream out;
 	out.open(sstable_dir_path_ + "/level-0/" + sstable->get_filename(), std::ios::binary);
 	sstable->write_sstable(out);
@@ -214,6 +256,9 @@ void KVStore::merge_sstable_level0() {
 		sstable_buffer[1].insert(sstable_buffer[1].end(), new_table_list.begin(), new_table_list.end());
 	} else {
 		sstable_buffer.push_back(new_table_list);
+	}
+	if (!utils::dirExists(sstable_dir_path_ + "/level-1")) {
+		utils::mkdir(sstable_dir_path_ + "/level-1");
 	}
 	for (SSTable *sstable: new_table_list) {
 		std::ofstream out;

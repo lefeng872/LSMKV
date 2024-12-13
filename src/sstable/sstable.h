@@ -60,8 +60,13 @@ public:
      */
     std::vector<SSTableTuple> get_content() const;
 
-    // 二分查找搜索key，通过offset从vLog文件读取键值对
-    // 将SSTable缓存在内存中
+    /**
+     * check bloomfilter for fast reject
+     */
+    bool check_filter(uint64_t _key) const;
+
+    // binary search, if not found, set _v_len to 0
+    void search(uint64_t _key, uint64_t *_offset, uint32_t *_v_len) const;
 };
 
 #endif //LSM_KV_SSTable_H

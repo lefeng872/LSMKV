@@ -83,3 +83,7 @@ std::string VLog::read_value(uint64_t offset, uint32_t len) {
     in.close();
     return value;
 }
+
+void VLog::reset() {
+    tail_ = 0;
+}

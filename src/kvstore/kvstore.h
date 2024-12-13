@@ -33,13 +33,13 @@ public:
 	void gc(uint64_t chunk_size) override;
 
 private:
-	std::string dir_;
-	std::string vlog_;
+	std::string sstable_dir_path_;
+	std::string vlog_path_;
 	SkipList *skip_list_;
 	std::vector<std::vector<SSTable *>> sstable_buffer;
 	VLog *v_log_;
 
-	uint64_t global_timestamp;  // the latest sstable timestamp
+	uint64_t global_timestamp;  // the next sstable timestamp to allocate
 
 	/**
 	 * SSTable must not larger than 16kb,
@@ -49,8 +49,21 @@ private:
 	uint32_t memTable_need_flush();
 
 	/**
-	 * @brief run compaction
-	 * @return the deepest level that is modified and need to be rewriten
+	 * @brief Put current skiplist into sstable
+	 * in level-0, and continues the merging 
+	 * process if neccessary.
+	 * @details This function only put data onto
+	 * disk, not modifying anything logically.
 	*/
 	uint32_t run_compaction();
+
+	/**
+	 * flush memtable to sstable on level-0
+	 */
+	void flush_memTable();
+
+	/**
+	 * 
+	 */
+	void merge_sstable_level0();
 };

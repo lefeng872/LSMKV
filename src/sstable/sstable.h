@@ -41,6 +41,10 @@ public:
 
     SSTable(std::ifstream &in);
 
+    std::string get_filename() const;
+
+    uint32_t write_sstable(std::ofstream &out);
+
     // 二分查找搜索key，通过offset从vLog文件读取键值对
     // 将SSTable缓存在内存中
 };

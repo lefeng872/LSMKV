@@ -24,3 +24,7 @@ SSTable::SSTable(std::ifstream &in) {
 		tuple_list_.push_back(SSTableTuple(tuple.key, tuple.offset, tuple.v_len));
 	}
 }
+
+std::string SSTable::get_filename() const {
+	return std::to_string(header_.min) + "-" + std::to_string(header_.max) + "_" + std::to_string(header_.timestamp) + ".sst";
+}

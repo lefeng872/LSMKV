@@ -4,26 +4,27 @@
 #include <vector>
 
 KVStore::KVStore(const std::string &dir, const std::string &vlog) : KVStoreAPI(dir, vlog) {
-	dir_ = dir;
-	vlog_ = vlog;
+	sstable_dir_path_ = dir;
+	vlog_path_ = vlog;
 	skip_list_ = new SkipList(8);
-	v_log_ = new VLog(vlog);
+	v_log_ = new VLog(vlog_path_);
 	std::vector<std::string> sst_directory_list;
-	utils::scanDir(dir_, sst_directory_list);
+	utils::scanDir(sstable_dir_path_, sst_directory_list);
 	for (size_t i = 0; i < sst_directory_list.size(); ++i) {
 		std::string level_dir = sst_directory_list[i];
 		std::vector<std::string> sst_filename_list;
-		utils::scanDir(dir_ + "/" + level_dir, sst_filename_list);
+		utils::scanDir(sstable_dir_path_ + "/" + level_dir, sst_filename_list);
 		std::vector<SSTable *> sstable_list;
 		for (size_t j = 0; j < sst_filename_list.size(); ++j) {
 			std::ifstream in;
-			in.open(dir_ + "/" + level_dir + "/" + sst_filename_list[j], std::ios::binary);
+			in.open(sstable_dir_path_ + "/" + level_dir + "/" + sst_filename_list[j], std::ios::binary);
 			SSTable *sstable = new SSTable(in);
 			in.close();
 			sstable_list.push_back(sstable);
 		}
 		sstable_buffer.push_back(sstable_list);
 	}
+	// todo restore global timestamp
 }
 
 KVStore::~KVStore() {
@@ -62,6 +63,7 @@ void KVStore::put(uint64_t key, const std::string &s) {
  */
 std::string KVStore::get(uint64_t key)
 {
+	// todo
 	return "";
 }
 
@@ -85,6 +87,7 @@ bool KVStore::del(uint64_t key)
  * including memtable and all sstables files.
  */
 void KVStore::reset() {
+	// todo
 }
 
 /**
@@ -92,16 +95,16 @@ void KVStore::reset() {
  * keys in the list should be in an ascending order.
  * An empty string indicates not found.
  */
-void KVStore::scan(uint64_t key1, uint64_t key2, std::list<std::pair<uint64_t, std::string>> &list)
-{
+void KVStore::scan(uint64_t key1, uint64_t key2, std::list<std::pair<uint64_t, std::string>> &list) {
+	// todo
 }
 
 /**
  * This reclaims space from vLog by moving valid value and discarding invalid value.
  * chunk_size is the size in byte you should AT LEAST recycle.
  */
-void KVStore::gc(uint64_t chunk_size)
-{
+void KVStore::gc(uint64_t chunk_size) {
+	// todo
 }
 
 uint32_t KVStore::memTable_need_flush() {
@@ -109,5 +112,34 @@ uint32_t KVStore::memTable_need_flush() {
 }
 
 uint32_t KVStore::run_compaction() {
-	return 0;
+	flush_memTable();
+}
+
+void KVStore::flush_memTable() {
+	std::vector<std::pair<uint64_t, std::string>> content;
+	this->skip_list_->get_content(content);
+	// append vlog
+	uint64_t start_offset = this->v_log_->append(content);
+	// generate sstable
+	SSTable *sstable = new SSTable(global_timestamp, start_offset, content);
+	global_timestamp++;
+	// write sstable
+	std::ofstream out;
+	out.open(sstable_dir_path_ + "/level-0/" + sstable->get_filename(), std::ios::binary);
+	sstable->write_sstable(out);
+	out.close();
+	// update sstable_buffer
+	if (this->sstable_buffer.empty()) {
+		std::vector<SSTable *> sstable_list_0;
+		sstable_list_0.push_back(sstable);
+		this->sstable_buffer.push_back(sstable_list_0);
+	} else {
+		sstable_buffer.front().push_back(sstable);
+	}
+	// reset skiplist
+	this->skip_list_->clear();
+}
+
+void KVStore::merge_sstable_level0() {
+	//
 }

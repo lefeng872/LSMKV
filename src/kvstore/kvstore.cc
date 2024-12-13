@@ -2,6 +2,8 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <algorithm>
+#include <cstdint>
 
 KVStore::KVStore(const std::string &dir, const std::string &vlog) : KVStoreAPI(dir, vlog) {
 	sstable_dir_path_ = dir;
@@ -141,5 +143,82 @@ void KVStore::flush_memTable() {
 }
 
 void KVStore::merge_sstable_level0() {
-	//
+	if (this->sstable_buffer.empty()) {
+		return;
+	}
+	std::vector<SSTable *> sstable_collection;
+	uint64_t left = UINT64_MAX;
+	uint64_t right = 0;
+	// collect all sstable in level-0, rm them in buffer and on disk
+	for (SSTable *sstable: sstable_buffer.front()) {
+		sstable_collection.push_back(sstable);
+		if (!utils::rmfile(sstable_dir_path_ + "/level-0/" + sstable->get_filename())) {
+			printf("rm level-0 sstable doesn't exist!\n");
+		}
+		left = std::min(sstable->get_min(), left);
+		right = std::max(sstable->get_max(), right);
+	}
+	sstable_buffer.front().clear();
+	// collect overlaped sstable in level-1(if level-1 exists), rm them in buffer and on disk
+	if (sstable_buffer.size() > 1) {
+		for (auto it = sstable_buffer[1].begin(); it != sstable_buffer[1].end();) {
+			if ((*it)->get_min() > right || (*it)->get_max() < left) {
+				++it;
+			} else {
+				sstable_collection.push_back(*it);
+				it = sstable_buffer[1].erase(it);
+				if (!utils::rmfile(sstable_dir_path_ + "/level-1/" + (*it)->get_filename())) {
+					printf("rm level-1 sstable doesn't exist!\n");
+				}
+			}
+		}
+	}
+	// merge all tuples
+	std::sort(sstable_collection.begin(), sstable_collection.end(), [](SSTable *a, SSTable *b) {
+		return a->get_timestamp() < b->get_timestamp() || (a->get_timestamp() == b->get_timestamp() && a->get_min() < b->get_min());
+	});
+	std::vector<SSTableTuple> tuple_collection;
+	for (SSTable *sstable: sstable_collection) {
+		std::vector<SSTableTuple> sstable_content = sstable->get_content();
+		for (SSTableTuple tuple: sstable_content) {
+			auto it = tuple_collection.begin();
+			while (it != tuple_collection.end()) {
+				if ((*it).key < tuple.key) {
+					++it;
+				} else {
+					break;
+				}
+			}
+			if (it != tuple_collection.end() && (*it).key == tuple.key) {
+				(*it).offset = tuple.offset;
+				(*it).v_len = tuple.v_len;
+			} else {
+				tuple_collection.insert(it, tuple);
+			}
+		}
+	}
+	// break tuple_collection into new sstables
+	std::vector<SSTable *> new_table_list;
+	uint64_t latest_timestamp = sstable_collection.back()->get_timestamp();
+	uint64_t MAX_TUPLE = (PAGE_SIZE - 32 - 8192) / sizeof(SSTableTuple);
+	auto it = tuple_collection.begin();
+	for (; it + MAX_TUPLE < tuple_collection.end(); it += MAX_TUPLE) {
+		std::vector<SSTableTuple> subset(it, it + MAX_TUPLE);
+		new_table_list.push_back(new SSTable(latest_timestamp, subset));
+	}
+	if (it != tuple_collection.end()) {
+		std::vector<SSTableTuple> subset(it, tuple_collection.end());
+		new_table_list.push_back(new SSTable(latest_timestamp, subset));
+	}
+	if (sstable_buffer.size() > 1) {
+		sstable_buffer[1].insert(sstable_buffer[1].end(), new_table_list.begin(), new_table_list.end());
+	} else {
+		sstable_buffer.push_back(new_table_list);
+	}
+	for (SSTable *sstable: new_table_list) {
+		std::ofstream out;
+		out.open(sstable_dir_path_ + "/level-1/" + sstable->get_filename(), std::ios::binary);
+		sstable->write_sstable(out);
+		out.close();
+	}
 }

@@ -41,9 +41,24 @@ public:
 
     SSTable(std::ifstream &in);
 
+    SSTable(uint64_t _timestamp, const std::vector<SSTableTuple> &content);
+
     std::string get_filename() const;
 
-    uint32_t write_sstable(std::ofstream &out);
+    uint64_t get_min() const;
+
+    uint64_t get_max() const;
+
+    uint64_t get_timestamp() const;
+
+    void write_sstable(std::ofstream &out);
+
+    /**
+     * append the tuple_list in this table
+     * to the given list
+     * @param the given list to append
+     */
+    std::vector<SSTableTuple> get_content() const;
 
     // 二分查找搜索key，通过offset从vLog文件读取键值对
     // 将SSTable缓存在内存中

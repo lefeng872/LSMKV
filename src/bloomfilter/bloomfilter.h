@@ -10,7 +10,6 @@ const uint32_t FILTER_MAX = 8192;
 class BloomFilter {
 public:
     std::bitset<8 * FILTER_MAX> bitset_;
-    uint32_t hashV[4];
 public:
     BloomFilter() {}
     ~BloomFilter() {}

@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
 	std::cout << std::endl;
 	std::cout.flush();
 
-	CorrectnessTest test("./data/sstables", "./data/vlog", verbose);
+	CorrectnessTest test("./data/sstables", "./data/vlog.db", verbose);
 
 	test.start_test();
 

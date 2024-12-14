@@ -17,3 +17,7 @@ bin/main: bin src/skiplist/skiplist.o src/bloomfilter/bloomfilter.o src/vlog/vlo
 
 clean: 
 	-rm -f bin/* src/*/*.o
+
+reset:
+	-rm -rf data/sstables/level*
+	-rm -f data/vlog/*.db

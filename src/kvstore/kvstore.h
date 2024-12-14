@@ -10,7 +10,7 @@
 
 static const int KB = 1024;
 
-#define PAGE_SIZE (16 * 1024)
+#define SSTABLE_MAX_SIZE (16 * 1024)
 
 class KVStore : public KVStoreAPI
 {

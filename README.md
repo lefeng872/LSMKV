@@ -85,6 +85,7 @@ if key exists in memTable then
 
 for i = 0 to maxLevel do
     for sstables in level-i do
+        // notice, level-0 should compare on timestamp
         if key exists in filter then
             if binary search found key then
                 value := lookupVlog()

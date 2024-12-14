@@ -28,9 +28,9 @@ struct VLogEntry {
         data.insert(data.end(), key_bytes, key_bytes + sizeof(key));
         unsigned char *vlen_bytes = reinterpret_cast<unsigned char *>(&v_len);
         data.insert(data.end(), vlen_bytes, vlen_bytes + sizeof(v_len));
-        unsigned char *value_bytes = reinterpret_cast<unsigned char *>(&value);
-        data.insert(data.end(), value_bytes, value_bytes + sizeof(value));
+        data.insert(data.end(), value.begin(), value.end());
         check_sum = utils::crc16(data);
+        // printf("generate check_sum=%hu\n", check_sum); 
     }
 
     bool check() {
@@ -39,9 +39,10 @@ struct VLogEntry {
         data.insert(data.end(), key_bytes, key_bytes + sizeof(key));
         unsigned char *vlen_bytes = reinterpret_cast<unsigned char *>(&v_len);
         data.insert(data.end(), vlen_bytes, vlen_bytes + sizeof(v_len));
-        unsigned char *value_bytes = reinterpret_cast<unsigned char *>(&value);
-        data.insert(data.end(), value_bytes, value_bytes + sizeof(value));
-        return check_sum == utils::crc16(data);
+        data.insert(data.end(), value.begin(), value.end());
+        uint16_t result = utils::crc16(data);
+        // printf("result=%hu, read check_sum=%hu\n", result, check_sum);
+        return check_sum == result;
     }
 
     uint64_t size() {
@@ -54,10 +55,10 @@ private:
     std::string filename_;
     uint64_t tail_;
 
-    uint64_t read_vlog_entry(std::ifstream &in, VLogEntry *vlog_entry);
+    bool read_vlog_entry(std::ifstream &in, VLogEntry *vlog_entry);
 public:
 
-    VLog(std::string _filename);
+    VLog(const std::string &_filename);
     /**
      * @brief append a list of key-value pairs to vLog file
      * @return offset of start
@@ -73,6 +74,8 @@ public:
     std::string read_value(uint64_t offset, uint32_t len);
 
     void reset();
+
+    void print() const;
 };
 
 #endif //LSM_KV_VLog_H

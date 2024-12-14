@@ -8,8 +8,9 @@ SSTable::SSTable(uint64_t _timestamp, uint64_t _offset, std::vector<std::pair<ui
     filter_.reset();
     for (const auto &pair : content) {
         filter_.insert(pair.first);
+		_offset += (1 + 2 + 8 + 4);
         tuple_list_.push_back(SSTableTuple(pair.first, _offset, pair.second.length()));
-		_offset += pair.second.length() + 1 + 2 + 8 + 4;
+		_offset += pair.second.length();
     }
 }
 
@@ -20,7 +21,8 @@ SSTable::SSTable(std::ifstream &in) {
 	in.read(reinterpret_cast<char *> (&header_.max), 8);
 	in.read(reinterpret_cast<char *> (&filter_.bitset_), FILTER_MAX);
 	SSTableTuple tuple;
-	while (in.read(reinterpret_cast<char *> (&tuple), sizeof(tuple))) {
+	for (uint64_t i = 0; i < header_.size; ++i) {
+		in.read(reinterpret_cast<char *> (&tuple), sizeof(tuple));
 		tuple_list_.push_back(SSTableTuple(tuple.key, tuple.offset, tuple.v_len));
 	}
 }
@@ -71,7 +73,7 @@ bool SSTable::check_filter(uint64_t _key) const {
 	return this->filter_.search(_key);
 }
 
-void SSTable::search(uint64_t _key, uint64_t *_offset, uint32_t *_v_len) const {
+bool SSTable::search(uint64_t _key, uint64_t *_offset, uint32_t *_v_len) const {
 	uint32_t left = 0;
 	uint32_t right = tuple_list_.size();
 	while (left < right) {
@@ -83,8 +85,19 @@ void SSTable::search(uint64_t _key, uint64_t *_offset, uint32_t *_v_len) const {
 		} else {
 			*_offset = tuple_list_[mid].offset;
 			*_v_len = tuple_list_[mid].v_len;
+			return true;
 		}
 	}
-	*_offset = 0;
-	*_v_len = 0;
+	return false;
+}
+
+void SSTable::print() const {
+	printf("timestamp=%lu\n", header_.timestamp);
+	printf("size=%lu\n", header_.size);
+	printf("min=%lu\n", header_.min);
+	printf("max=%lu\n", header_.max);
+	printf("belive it or not, there is a filter, next is the content\n");
+	for (SSTableTuple tuple: tuple_list_) {
+		printf("key=%lu, offset=%lu, v_len=%u\n", tuple.key, tuple.offset, tuple.v_len);
+	}
 }

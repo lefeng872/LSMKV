@@ -6,8 +6,8 @@
 #include <cstdint>
 
 KVStore::KVStore(const std::string &dir, const std::string &vlog) : KVStoreAPI(dir, vlog) {
-	sstable_dir_path_ = dir;
-	vlog_path_ = vlog;
+	this->sstable_dir_path_ = dir;
+	this->vlog_path_ = vlog;
 	skip_list_ = new SkipList(8);
 	v_log_ = new VLog(vlog_path_);
 	global_timestamp = 0;
@@ -67,17 +67,24 @@ void KVStore::put(uint64_t key, const std::string &s) {
 std::string KVStore::get(uint64_t key)
 {
 	std::string value = this->skip_list_->search(key);
+	uint64_t matched_timestamp = 0;
+	uint64_t offset = 0;
+	uint32_t v_len = 0;
 	if (value == "~SkipListNotFound~") {
 		for (auto level_sstable_list: sstable_buffer) {
 			for (SSTable *sstable: level_sstable_list) {
-				if (sstable->get_min() <= key && sstable->get_max() >= key && sstable->check_filter(key)) {
-					uint64_t offset = 0;
-					uint32_t v_len = 0;
+				if (sstable->get_min() <= key && 
+					sstable->get_max() >= key && 
+					sstable->check_filter(key) && 
+					sstable->get_timestamp() >= matched_timestamp) {
 					sstable->search(key, &offset, &v_len);
 					if (v_len) {
-						return this->v_log_->read_value(offset, v_len);
+						matched_timestamp = sstable->get_timestamp();
 					}
 				}
+			}
+			if (v_len) {
+				return this->v_log_->read_value(offset, v_len);
 			}
 		}
 		return "";
@@ -107,6 +114,7 @@ bool KVStore::del(uint64_t key)
  */
 void KVStore::reset() {
 	this->skip_list_->clear();
+	this->v_log_->reset();
 	for (auto level_sstable_list: this->sstable_buffer) {
 		for (SSTable *sstable: level_sstable_list) {
 			delete sstable;
@@ -114,21 +122,16 @@ void KVStore::reset() {
 		level_sstable_list.clear();
 	}
 	this->sstable_buffer.clear();
-	this->v_log_->reset();
 	std::vector<std::string> sst_directory_list;
 	utils::scanDir(this->sstable_dir_path_, sst_directory_list);
 	for (std::string level_dir: sst_directory_list) {
 		std::vector<std::string> sst_file_list;
-		utils::scanDir(level_dir, sst_file_list);
+		utils::scanDir(sstable_dir_path_ + "/" + level_dir, sst_file_list);
 		for (std::string sst_filename: sst_file_list) {
 			utils::rmfile(sstable_dir_path_ + "/" + level_dir + "/" + sst_filename);
 		}
 		utils::rmdir(sstable_dir_path_ + "/" + level_dir);
 	}
-	utils::rmfile(vlog_path_);
-	std::ofstream out;
-    out.open(this->vlog_path_, std::ios::binary);
-    out.close();
 }
 
 /**
@@ -149,14 +152,20 @@ void KVStore::gc(uint64_t chunk_size) {
 }
 
 uint32_t KVStore::memTable_need_flush() {
-	return 32 + 8192 + (this->skip_list_->get_size() + 1) * sizeof(SSTableTuple) > PAGE_SIZE;
+	return 32 + 8192 + (this->skip_list_->get_size() + 1) * sizeof(SSTableTuple) > SSTABLE_MAX_SIZE;
 }
 
 uint32_t KVStore::run_compaction() {
 	flush_memTable();
+	// todo merge level 0
+	// todo merge level x
+	return 0;
 }
 
 void KVStore::flush_memTable() {
+	if (!this->skip_list_->get_size()) {
+		return;
+	}
 	std::vector<std::pair<uint64_t, std::string>> content;
 	this->skip_list_->get_content(content);
 	// append vlog
@@ -242,7 +251,7 @@ void KVStore::merge_sstable_level0() {
 	// break tuple_collection into new sstables
 	std::vector<SSTable *> new_table_list;
 	uint64_t latest_timestamp = sstable_collection.back()->get_timestamp();
-	uint64_t MAX_TUPLE = (PAGE_SIZE - 32 - 8192) / sizeof(SSTableTuple);
+	uint64_t MAX_TUPLE = (SSTABLE_MAX_SIZE - 32 - 8192) / sizeof(SSTableTuple);
 	auto it = tuple_collection.begin();
 	for (; it + MAX_TUPLE < tuple_collection.end(); it += MAX_TUPLE) {
 		std::vector<SSTableTuple> subset(it, it + MAX_TUPLE);

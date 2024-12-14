@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
 		printf("Killing loop after %d ms.\n", wait_time);
 		std::cout << std::endl;
 
-		PersistenceTest test("./data/sstables", "./data/vlog", verbose);
+		PersistenceTest test("./data/sstables", "./data/vlog/vlog.db", verbose);
 
 		// test for data integrity
 		test.test();

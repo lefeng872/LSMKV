@@ -43,6 +43,8 @@ public:
 
     SSTable(uint64_t _timestamp, const std::vector<SSTableTuple> &content);
 
+    ~SSTable() {}
+
     std::string get_filename() const;
 
     uint64_t get_min() const;
@@ -66,7 +68,9 @@ public:
     bool check_filter(uint64_t _key) const;
 
     // binary search, if not found, set _v_len to 0
-    void search(uint64_t _key, uint64_t *_offset, uint32_t *_v_len) const;
+    bool search(uint64_t _key, uint64_t *_offset, uint32_t *_v_len) const;
+
+    void print() const;
 };
 
 #endif //LSM_KV_SSTable_H

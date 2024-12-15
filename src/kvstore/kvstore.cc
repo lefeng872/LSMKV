@@ -158,6 +158,9 @@ uint32_t KVStore::memTable_need_flush() {
 uint32_t KVStore::run_compaction() {
 	flush_memTable();
 	// todo merge level 0
+	if (!sstable_buffer.empty() && sstable_buffer[0].size() >= level_max_sstable_num(0)) {
+		merge_sstable_level0();
+	}
 	// todo merge level x
 	return 0;
 }
@@ -194,6 +197,7 @@ void KVStore::flush_memTable() {
 }
 
 void KVStore::merge_sstable_level0() {
+	printf("===============Start=================\n");
 	if (this->sstable_buffer.empty()) {
 		return;
 	}
@@ -202,9 +206,12 @@ void KVStore::merge_sstable_level0() {
 	uint64_t right = 0;
 	// collect all sstable in level-0, rm them in buffer and on disk
 	for (SSTable *sstable: sstable_buffer.front()) {
+		printf("remove [%s]\n", sstable->get_filename().c_str());
+		print_sstable_buffer();
+		print_sstable_disk();
 		sstable_collection.push_back(sstable);
-		if (!utils::rmfile(sstable_dir_path_ + "/level-0/" + sstable->get_filename())) {
-			printf("rm level-0 sstable doesn't exist!\n");
+		if (utils::rmfile(sstable_dir_path_ + "/level-0/" + sstable->get_filename())) {
+			printf("rm level-0 sstable[%s] doesn't exist!\n", sstable->get_filename().c_str());
 		}
 		left = std::min(sstable->get_min(), left);
 		right = std::max(sstable->get_max(), right);
@@ -216,11 +223,14 @@ void KVStore::merge_sstable_level0() {
 			if ((*it)->get_min() > right || (*it)->get_max() < left) {
 				++it;
 			} else {
+				printf("remove [%s]\n", (*it)->get_filename().c_str());
+				print_sstable_buffer();
+				print_sstable_disk();
 				sstable_collection.push_back(*it);
-				it = sstable_buffer[1].erase(it);
-				if (!utils::rmfile(sstable_dir_path_ + "/level-1/" + (*it)->get_filename())) {
-					printf("rm level-1 sstable doesn't exist!\n");
+				if (utils::rmfile(sstable_dir_path_ + "/level-1/" + (*it)->get_filename())) {
+					printf("rm level-1 sstable[%s] doesn't exist!_____________________________\n", (*it)->get_filename().c_str());
 				}
+				it = sstable_buffer[1].erase(it);
 			}
 		}
 	}
@@ -253,7 +263,7 @@ void KVStore::merge_sstable_level0() {
 	uint64_t latest_timestamp = sstable_collection.back()->get_timestamp();
 	uint64_t MAX_TUPLE = (SSTABLE_MAX_SIZE - 32 - 8192) / sizeof(SSTableTuple);
 	auto it = tuple_collection.begin();
-	for (; it + MAX_TUPLE < tuple_collection.end(); it += MAX_TUPLE) {
+	for (; it + MAX_TUPLE <= tuple_collection.end(); it += MAX_TUPLE) {
 		std::vector<SSTableTuple> subset(it, it + MAX_TUPLE);
 		new_table_list.push_back(new SSTable(latest_timestamp, subset));
 	}
@@ -275,4 +285,39 @@ void KVStore::merge_sstable_level0() {
 		sstable->write_sstable(out);
 		out.close();
 	}
+	for (SSTable *sstable: sstable_collection) {
+		delete sstable;
+	}
+}
+
+uint32_t KVStore::level_max_sstable_num(uint32_t level) const {
+	return 1 << level;
+}
+
+void KVStore::print_sstable_buffer() const {
+	printf("### SSTable Buffer:\n");
+	for (uint32_t i = 0; i < sstable_buffer.size(); ++i) {
+		printf("[level-%u]:\n", i);
+		for (SSTable *sstable: sstable_buffer[i]) {
+			printf("%s ", sstable->get_filename().c_str());
+		}
+		printf("\n");
+	}
+	printf("\n");
+}
+
+void KVStore::print_sstable_disk() const {
+	printf("### SSTable Disk:\n");
+	std::vector<std::string> directory_list;
+	utils::scanDir(sstable_dir_path_, directory_list);
+	for (std::string dir: directory_list) {
+		printf("files in[%s]:\n", dir.c_str());
+		std::vector<std::string> sstable_list;
+		utils::scanDir(sstable_dir_path_ + "/" + dir, sstable_list);
+		for (std::string sstable_file_name: sstable_list) {
+			printf("%s ", sstable_file_name.c_str());
+		}
+		printf("\n");
+	}
+	printf("\n");
 }

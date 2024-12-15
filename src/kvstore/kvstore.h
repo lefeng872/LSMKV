@@ -66,4 +66,10 @@ private:
 	 * 
 	 */
 	void merge_sstable_level0();
+
+	uint32_t level_max_sstable_num(uint32_t level) const;
+
+	void print_sstable_buffer() const;
+
+	void print_sstable_disk() const;
 };

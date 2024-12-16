@@ -5,7 +5,7 @@
 #include <string>
 #include <fstream>
 
-#define TEST_MAX 1024
+#define TEST_MAX 1000
 
 void print_sstable(const std::string &filename) {
     std::ifstream in;
@@ -36,19 +36,23 @@ void learn_read() {
 }
 
 int main() {
-    // print_sstable("data/sstables/level-0/0-339_0.sst");
+    // print_sstable("data/sstables/level-1/340-511_3.sst");
     // print_vlog("data/vlog/vlog.db"); 
     // learn_read();
     KVStore store("./data/sstables", "./data/vlog/vlog.db");
-    // for (uint32_t i = 0; i < TEST_MAX; ++i) {
-    //     printf("insert [%u, s%u]\n", i, i);
-    //     std::string value = "s" + std::to_string(i);
-    //     store.put(i, value);
-    // }
-    // printf("At least insert ok\n");
-    // for (uint32_t i = 0; i < TEST_MAX; ++i) {
-    //     std::string value = store.get(i);
-    //     printf("search [%u, %s]\n", i, value.c_str());
-    // }
-    store.reset(); 
+    for (uint64_t i = 0; i < TEST_MAX; ++i) {
+        store.put(i, std::string(i + 1, 's'));
+    }
+    printf("Above is after all insert \n");
+    for (uint64_t i = 0; i < TEST_MAX; i += 2) {
+        store.del(i);
+    }
+    for (uint64_t i = 0; i < TEST_MAX; ++i) {
+        if ((1 & i) != store.del(i)) {
+            printf("******del [%lu] error*******\n", i);
+        } else {
+            printf("del[%lu] is alright\n", i);
+        }
+    }
+    // store.reset(); 
 }

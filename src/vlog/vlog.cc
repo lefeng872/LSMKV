@@ -57,6 +57,9 @@ uint64_t VLog::append(const std::vector<std::pair<uint64_t, std::string>> &conte
     out.open(this->filename_, std::ios::app | std::ios::binary);
     uint64_t offset = out.tellp();
     for (const auto &pair : content) {
+        if (pair.second == "") {
+            continue;
+        }
         VLogEntry entry = VLogEntry(pair.first, pair.second);
         out.write(reinterpret_cast<const char *>(&entry.magic), sizeof(entry.magic));
         out.write(reinterpret_cast<const char *>(&entry.check_sum), sizeof(entry.check_sum));

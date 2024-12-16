@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
 
 	if (pid == 0)
 	{
-		PersistenceTest test("./data", "./data/vlog", verbose);
+		PersistenceTest test("./data/sstables", "./data/vlog/vlog.db", verbose);
 
 		// The child process first prepared data for testing
 		test.prepare();

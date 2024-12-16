@@ -60,6 +60,7 @@ Suppose we have two record, A(key1, value1), B(key1, value2). And I divide my st
 - level-x (x > 0)
 
 if A and B appeared in different classes, we assert updated order as: $$skiplist > level_0 > level_x$$
+
 if A and B both appeared in level-0, their belonging sstables must have different timestamps.
 
 if A and B both appeared in level-x, note sstables in the same level x don't intersect, and therefore the upper level (smaller index) record always win.

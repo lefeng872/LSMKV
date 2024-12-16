@@ -22,7 +22,7 @@ public:
 
 	void put(uint64_t key, const std::string &s) override;
 
-	std::string get(uint64_t key) override;
+	std::string get(uint64_t key) const override;
 
 	bool del(uint64_t key) override;
 
@@ -31,6 +31,8 @@ public:
 	void scan(uint64_t key1, uint64_t key2, std::list<std::pair<uint64_t, std::string>> &list) override;
 
 	void gc(uint64_t chunk_size) override;
+
+	void print() const;
 
 private:
 	std::string sstable_dir_path_;
@@ -55,7 +57,7 @@ private:
 	 * @details This function only put data onto
 	 * disk, not modifying anything logically.
 	*/
-	uint32_t run_compaction();
+	void run_compaction();
 
 	/**
 	 * flush memtable to sstable on level-0
@@ -67,9 +69,15 @@ private:
 	 */
 	void merge_sstable_level0();
 
+	void merge_sstable_levelx(uint32_t level);
+
 	uint32_t level_max_sstable_num(uint32_t level) const;
+
+	void remove_deleted_tuple(std::vector<SSTableTuple> &tuple_collection) const;
 
 	void print_sstable_buffer() const;
 
 	void print_sstable_disk() const;
+
+	void print_memtable() const;
 };

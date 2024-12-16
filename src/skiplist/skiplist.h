@@ -59,9 +59,11 @@ public:
     std::string search(uint64_t key) const;
 
     /**
-     * print this list
+     * print the whole list with all levels
     */
     void display() const;
+
+    void print_pair() const;
 
     /**
      * output the content into a sorted vector

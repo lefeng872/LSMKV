@@ -80,6 +80,15 @@ void SkipList::display() const {
     }
 }
 
+void SkipList::print_pair() const {
+    SLNode *node = head_->next_list[0];
+    while (node->type != TYPE::TAIL) {
+        std::cout << "-->(" << node->key << "," << node->val.substr(0, 5) << ")";
+        node = node->next_list[0];
+    }
+    std::cout << "-->N" << std::endl;
+}
+
 void SkipList::clear() {
     if (head_->next_list[0] == tail_) return;
     SLNode *n1 = head_->next_list[0], *n2;

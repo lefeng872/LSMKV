@@ -8,6 +8,10 @@ SSTable::SSTable(uint64_t _timestamp, uint64_t _offset, std::vector<std::pair<ui
     filter_.reset();
     for (const auto &pair : content) {
         filter_.insert(pair.first);
+		if (pair.second == "") {
+			tuple_list_.push_back(SSTableTuple(pair.first, 0, 0));
+			continue;
+		}
 		_offset += (1 + 2 + 8 + 4);
         tuple_list_.push_back(SSTableTuple(pair.first, _offset, pair.second.length()));
 		_offset += pair.second.length();

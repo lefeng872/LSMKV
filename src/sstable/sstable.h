@@ -31,6 +31,15 @@ struct SSTableTuple {
     }
 };
 
+struct SSTableTimestampTuple {
+    SSTableTuple tuple;
+    uint64_t timestamp;
+    SSTableTimestampTuple(uint64_t key, uint64_t offset, uint32_t v_len, uint64_t _timestamp) {
+        tuple = SSTableTuple(key, offset, v_len);
+        this->timestamp = _timestamp;
+    }
+};
+
 class SSTable {
 private:
     SSTableHeader header_;

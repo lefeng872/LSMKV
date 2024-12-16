@@ -2,6 +2,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <queue>
 #include <algorithm>
 #include <cstdint>
 
@@ -261,35 +262,10 @@ void KVStore::merge_sstable_level0() {
 		}
 	}
 	// merge all tuples
-	std::sort(sstable_collection.begin(), sstable_collection.end(), [](SSTable *a, SSTable *b) {
-		return a->get_timestamp() < b->get_timestamp() || (a->get_timestamp() == b->get_timestamp() && a->get_min() < b->get_min());
-	});
 	std::vector<SSTableTuple> tuple_collection;
-	for (SSTable *sstable: sstable_collection) {
-		std::vector<SSTableTuple> sstable_content = sstable->get_content();
-		for (SSTableTuple tuple: sstable_content) {
-			auto it = tuple_collection.begin();
-			while (it != tuple_collection.end()) {
-				if ((*it).key < tuple.key) {
-					++it;
-				} else {
-					break;
-				}
-			}
-			if (it != tuple_collection.end() && (*it).key == tuple.key) {
-				(*it).offset = tuple.offset;
-				(*it).v_len = tuple.v_len;
-			} else {
-				tuple_collection.insert(it, tuple);
-			}
-		}
-	}
-	if (sstable_buffer.size() <= 2) {
-		remove_deleted_tuple(tuple_collection);
-	}
+	uint64_t latest_timestamp = merge_sort_sstable(sstable_collection, tuple_collection);
 	// break tuple_collection into new sstables
 	std::vector<SSTable *> new_table_list;
-	uint64_t latest_timestamp = sstable_collection.back()->get_timestamp();
 	uint64_t MAX_TUPLE = (SSTABLE_MAX_SIZE - 32 - 8192) / sizeof(SSTableTuple);
 	auto it = tuple_collection.begin();
 	for (; it + MAX_TUPLE <= tuple_collection.end(); it += MAX_TUPLE) {
@@ -352,34 +328,9 @@ void KVStore::merge_sstable_levelx(uint32_t level) {
 			}
 		}
 	}
-	std::sort(sstable_collection.begin(), sstable_collection.end(), [](SSTable *a, SSTable *b) {
-		return a->get_timestamp() < b->get_timestamp() || (a->get_timestamp()  == b->get_timestamp() && a->get_min() < b->get_min());
-	});
 	std::vector<SSTableTuple> tuple_collection;
-	for (SSTable *sstable: sstable_collection) {
-		std::vector<SSTableTuple> sstable_content = sstable->get_content();
-		for (SSTableTuple tuple: sstable_content) {
-			auto it = tuple_collection.begin();
-			while (it != tuple_collection.end()) {
-				if ((*it).key < tuple.key) {
-					++it;
-				} else {
-					break;
-				}
-			}
-			if (it != tuple_collection.end() && (*it).key == tuple.key) {
-				(*it).offset = tuple.offset;
-				(*it).v_len = tuple.v_len;
-			} else {
-				tuple_collection.insert(it, tuple);
-			}
-		}
-	}
-	if (sstable_buffer.size() <= level + 2) {
-		remove_deleted_tuple(tuple_collection);
-	}
+	uint64_t latest_timestamp = merge_sort_sstable(sstable_collection, tuple_collection);
 	std::vector <SSTable *> new_table_list;
-	uint64_t latest_timestamp = sstable_collection.back()->get_timestamp();
 	uint64_t MAX_TUPLE = (SSTABLE_MAX_SIZE - 32 - 8192) / sizeof(SSTableTuple);
 	auto it = tuple_collection.begin();
 	for (; it + MAX_TUPLE <= tuple_collection.end(); it += MAX_TUPLE) {
@@ -421,6 +372,36 @@ void KVStore::remove_deleted_tuple(std::vector<SSTableTuple> &tuple_collection) 
 			++it;
 		}
 	}
+}
+
+uint64_t KVStore::merge_sort_sstable(std::vector<SSTable *> &sstable_collection, std::vector<SSTableTuple> &tuple_collection) {
+	auto cmp = [](const SSTableTimestampTuple &a, const SSTableTimestampTuple &b) {
+		return a.tuple.key > b.tuple.key || (a.tuple.key == b.tuple.key && a.timestamp > b.timestamp);
+	};
+	std::priority_queue<SSTableTimestampTuple, std::vector<SSTableTimestampTuple>, decltype(cmp)> tuple_queue(cmp);
+	uint64_t latest = 0;
+	for (SSTable *sstable: sstable_collection) {
+		latest = std::max(latest, sstable->get_timestamp());
+		std::vector<SSTableTuple> content = sstable->get_content();
+		for (SSTableTuple tuple: content) {
+			tuple_queue.emplace(tuple.key, tuple.offset, tuple.v_len, sstable->get_timestamp());
+		}
+	}
+	while (!tuple_queue.empty()) {
+		SSTableTimestampTuple item = tuple_queue.top();
+		tuple_queue.pop();
+		if (tuple_collection.empty()) {
+			tuple_collection.push_back(item.tuple);
+		} else {
+			if (item.tuple.key == tuple_collection.back().key) {
+				tuple_collection.back().offset = item.tuple.offset;
+				tuple_collection.back().v_len = item.tuple.v_len;
+			} else {
+				tuple_collection.push_back(item.tuple);
+			}
+		}
+	}
+	return latest;
 }
 
 void KVStore::print_sstable_buffer() const {

@@ -75,6 +75,8 @@ private:
 
 	void remove_deleted_tuple(std::vector<SSTableTuple> &tuple_collection) const;
 
+	uint64_t merge_sort_sstable(std::vector<SSTable *> &sstable_collection, std::vector<SSTableTuple> &tuple_collection);
+
 	void print_sstable_buffer() const;
 
 	void print_sstable_disk() const;

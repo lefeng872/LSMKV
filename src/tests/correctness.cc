@@ -40,37 +40,37 @@ private:
 		phase();
 
 		// Test scan
-		// std::list<std::pair<uint64_t, std::string>> list_ans;
-		// std::list<std::pair<uint64_t, std::string>> list_stu;
+		std::list<std::pair<uint64_t, std::string>> list_ans;
+		std::list<std::pair<uint64_t, std::string>> list_stu;
 
-		// for (i = 0; i < max / 2; ++i)
-		// {
-		// 	list_ans.emplace_back(std::make_pair(i, std::string(i + 1, 's')));
-		// }
+		for (i = 0; i < max / 2; ++i)
+		{
+			list_ans.emplace_back(std::make_pair(i, std::string(i + 1, 's')));
+		}
 
-		// store.scan(0, max / 2 - 1, list_stu);
-		// EXPECT(list_ans.size(), list_stu.size());
+		store.scan(0, max / 2 - 1, list_stu);
+		EXPECT(list_ans.size(), list_stu.size());
 
-		// auto ap = list_ans.begin();
-		// auto sp = list_stu.begin();
-		// while (ap != list_ans.end())
-		// {
-		// 	if (sp == list_stu.end())
-		// 	{
-		// 		EXPECT((*ap).first, -1);
-		// 		EXPECT((*ap).second, not_found);
-		// 		ap++;
-		// 	}
-		// 	else
-		// 	{
-		// 		EXPECT((*ap).first, (*sp).first);
-		// 		EXPECT((*ap).second, (*sp).second);
-		// 		ap++;
-		// 		sp++;
-		// 	}
-		// }
+		auto ap = list_ans.begin();
+		auto sp = list_stu.begin();
+		while (ap != list_ans.end())
+		{
+			if (sp == list_stu.end())
+			{
+				EXPECT((*ap).first, -1);
+				EXPECT((*ap).second, not_found);
+				ap++;
+			}
+			else
+			{
+				EXPECT((*ap).first, (*sp).first);
+				EXPECT((*ap).second, (*sp).second);
+				ap++;
+				sp++;
+			}
+		}
 
-		// phase();
+		phase();
 
 		// Test deletions
 		for (i = 0; i < max; i += 2)

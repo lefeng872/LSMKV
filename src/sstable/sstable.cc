@@ -69,8 +69,16 @@ void SSTable::write_sstable(std::ofstream &out) {
 	}
 }
 
-std::vector<SSTableTuple> SSTable::get_content() const {
-	return tuple_list_;
+void SSTable::get_content(std::vector<SSTableTuple> &content) const {
+	content.insert(content.end(), tuple_list_.begin(), tuple_list_.end());
+}
+
+void SSTable::scan(uint64_t key1, uint64_t key2, std::vector<SSTableTuple> &result) const {
+	for (auto it = tuple_list_.begin(); it != tuple_list_.end(); ++it) {
+		if ((*it).key >= key1 && (*it).key <= key2) {
+			result.push_back(SSTableTuple((*it).key, (*it).offset, (*it).v_len));
+		}
+	}
 }
 
 bool SSTable::check_filter(uint64_t _key) const {

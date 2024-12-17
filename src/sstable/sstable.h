@@ -65,11 +65,11 @@ public:
     void write_sstable(std::ofstream &out);
 
     /**
-     * append the tuple_list in this table
-     * to the given list
-     * @param the given list to append
+     * @param the given vector to fill
      */
-    std::vector<SSTableTuple> get_content() const;
+    void get_content(std::vector<SSTableTuple> &content) const;
+
+    void scan(uint64_t key1, uint64_t key2, std::vector<SSTableTuple> &result) const;
 
     /**
      * check bloomfilter for fast reject

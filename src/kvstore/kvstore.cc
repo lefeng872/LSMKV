@@ -29,6 +29,7 @@ KVStore::KVStore(const std::string &dir, const std::string &vlog) : KVStoreAPI(d
 		}
 		sstable_buffer.push_back(sstable_list);
 	}
+	global_timestamp++;
 }
 
 KVStore::~KVStore() {
@@ -152,7 +153,59 @@ void KVStore::reset() {
  * An empty string indicates not found.
  */
 void KVStore::scan(uint64_t key1, uint64_t key2, std::list<std::pair<uint64_t, std::string>> &list) {
-	// todo
+	// printf("===============scan [%lu, %lu]\n", key1, key2);
+	// print();
+	auto cmp = [](const SSTableTimestampTuple &a, const SSTableTimestampTuple &b) {
+		return a.tuple.key > b.tuple.key || (a.tuple.key == b.tuple.key && a.timestamp > b.timestamp);
+	};
+	std::priority_queue<SSTableTimestampTuple, std::vector<SSTableTimestampTuple>, decltype(cmp)> tuple_queue(cmp);
+	// push all pairs in sstable
+	for (auto sstable_level_list: this->sstable_buffer) {
+		for (auto sstable: sstable_level_list) {
+			if (sstable->get_min() > key2 || sstable->get_max() < key1) {
+				continue;
+			} else {
+				std::vector<SSTableTuple> content;
+				sstable->scan(key1, key2, content);
+				for (auto tuple: content) {
+					tuple_queue.emplace(tuple.key, tuple.offset, tuple.v_len, sstable->get_timestamp());
+				}
+			}
+		}
+	}
+	std::vector<std::pair<uint64_t, std::string>> memtable_content;
+	this->skip_list_->get_content(memtable_content);
+	for (auto pair: memtable_content) {
+		if (pair.first >= key1 && pair.first < key1) {
+			tuple_queue.emplace(pair.first, 0, 0, UINT64_MAX);
+		}
+	}
+	while (!tuple_queue.empty()) {
+		SSTableTimestampTuple item = tuple_queue.top();
+		tuple_queue.pop();
+		// printf("this item: key=%lu, offset=%lu, vlen=%u, timestamp=%lu\n", item.tuple.key, item.tuple.offset, item.tuple.v_len, item.timestamp);
+		std::string value;
+		if (item.timestamp == UINT64_MAX) {
+			value = this->skip_list_->search(item.tuple.key);
+		} else {
+			value = this->v_log_->read_value(item.tuple.offset, item.tuple.v_len);
+		}
+		if (value == "") {
+			if (!list.empty() && list.back().first == item.tuple.key) {
+				list.pop_back();
+			}
+		} else {
+			if (list.empty()) {
+				list.push_back(std::make_pair(item.tuple.key, value));
+			} else {
+				if (list.back().first == item.tuple.key) {
+					list.back().second = value;
+				} else {
+					list.push_back(std::make_pair(item.tuple.key, value));
+				}
+			}
+		}
+	}
 }
 
 /**
@@ -382,7 +435,8 @@ uint64_t KVStore::merge_sort_sstable(std::vector<SSTable *> &sstable_collection,
 	uint64_t latest = 0;
 	for (SSTable *sstable: sstable_collection) {
 		latest = std::max(latest, sstable->get_timestamp());
-		std::vector<SSTableTuple> content = sstable->get_content();
+		std::vector<SSTableTuple> content;
+		sstable->get_content(content);
 		for (SSTableTuple tuple: content) {
 			tuple_queue.emplace(tuple.key, tuple.offset, tuple.v_len, sstable->get_timestamp());
 		}

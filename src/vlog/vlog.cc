@@ -14,7 +14,7 @@ VLog::VLog(const std::string &_filename) {
         return;
     }
     this->tail_ = utils::seek_data_block(this->filename_);  // non-hole file region
-    in.seekg(this->tail_);
+    in.seekg(this->tail_, std::ios::beg);
     VLogEntry entry;
     while (read_vlog_entry(in, &entry)) {
         // printf("this entry: key=%lu, vlen=%u, value=%s\n", entry.key, entry.v_len, entry.value.c_str());
@@ -69,6 +69,33 @@ uint64_t VLog::append(const std::vector<std::pair<uint64_t, std::string>> &conte
     }
     out.close();
     return offset;
+}
+
+void VLog::collect_garbage(uint64_t chunk_size, std::vector<GarbageEntry> &garbage) {
+    uint64_t start = utils::seek_data_block(filename_);
+    VLogEntry entry;
+    std::ifstream in;
+    in.open(filename_, std::ios::binary);
+    while (tail_ - start < chunk_size) {
+        if (read_vlog_entry(in, &entry)) {
+            tail_ += entry.size();
+            if (!entry.check()) {
+                continue;
+            }
+            garbage.emplace_back(entry, tail_);
+        } else {
+            break;
+        }
+    }
+    in.close();
+
+    std::ofstream out;
+    out.open(this->filename_, std::ios::app | std::ios::binary);
+    uint64_t head = out.tellp();
+    out.close();
+    printf("before de_alloc (start=%lu, size=%lu)\nlast in file is%lu\n", start, chunk_size, head);
+    utils::de_alloc_file(this->filename_, start, chunk_size);
+    printf("after de_alloc start=%lu\n", utils::seek_data_block(this->filename_));
 }
 
 std::string VLog::read_value(uint64_t offset, uint32_t len) {

@@ -213,7 +213,43 @@ void KVStore::scan(uint64_t key1, uint64_t key2, std::list<std::pair<uint64_t, s
  * chunk_size is the size in byte you should AT LEAST recycle.
  */
 void KVStore::gc(uint64_t chunk_size) {
-	// todo
+	std::vector<GarbageEntry> garbage;
+	this->v_log_->collect_garbage(chunk_size, garbage);
+	for (auto it = garbage.begin(); it != garbage.end(); ) {
+		if (this->skip_list_->search((*it).vlog_entry.key) != "~SkipListNotFound~") {
+			it = garbage.erase(it);
+		} else {
+			uint64_t matched_timestamp = 0;
+			bool find_flag = false;
+			uint64_t offset = 0;
+			uint32_t v_len= 0;
+			for (auto level_sstable_list: sstable_buffer) {
+				for (SSTable *sstable: level_sstable_list) {
+					if (sstable->get_min() <= (*it).vlog_entry.key && 
+					sstable->get_max() >= (*it).vlog_entry.key && 
+					sstable->check_filter((*it).vlog_entry.key) && 
+					sstable->get_timestamp() >= matched_timestamp) {
+						if (sstable->search((*it).vlog_entry.key, &offset, &v_len)) {
+							find_flag = true;
+							matched_timestamp = sstable->get_timestamp();
+						}
+					}
+				}
+				if (find_flag) {
+					break;
+				}
+			}
+			if (offset == (*it).offset) {
+				++it;
+			} else {
+				it = garbage.erase(it);
+			}
+		}
+	}
+	for (auto entry: garbage) {
+		put(entry.vlog_entry.key, entry.vlog_entry.value);
+	}
+	run_compaction();
 }
 
 void KVStore::print() const {

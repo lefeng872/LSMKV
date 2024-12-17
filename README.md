@@ -120,4 +120,11 @@ KVStore()
 ~KVStore()
 - flush memtalbe
 
-GC()
+GC(chunk_size)
+1) scan the first n vlog entries untill recycled bytes >= chunk_size,
+check entry.key and see does the newest record still points to 
+the same offset?
+2) if it does, insert back to memory table.
+3) if it doesn't, ignore.
+4) just flush
+5) use `de_alloc_file()` to dig holes on file

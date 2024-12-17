@@ -6,42 +6,39 @@ The handout files include two main parts:
 - The `KVStoreAPI` class in `kvstore_api.h` that specifies the interface of KVStore.
 - Test files including correctness test (`correctness.cc`) and persistence test (`persistence.cc`).
 
-Explanation of each handout file:
+Explanation of each file:
 
 ```text
 .
 ├── Makefile  // Makefile if you use GNU Make
 ├── README.md // This readme file
-├── correctness.cc // Correctness test, you should not modify this file
-├── data      // Data directory used in our test
-├── kvstore.cc     // your implementation
-├── kvstore.h      // your implementation
-├── kvstore_api.h  // KVStoreAPI, you should not modify this file
-├── persistence.cc // Persistence test, you should not modify this file
-├── utils.h         // Provides some file/directory interface
-├── MurmurHash3.h  // Provides murmur3 hash function
-└── test.h         // Base class for testing, you should not modify this file
+├── data      // Data directory
+├── doc       // Pdf in Chinese
+├── Dockerfile // (could have some problem with fallocate function, better use a real Linux machine)
+└── src
+    ├── bloomfilter
+    ├── kvstore
+    │   ├── kvstore_api.h  // KVStoreAPI
+    │   ├── kvstore.cc  
+    │   └── kvstore.h 
+    ├── skiplist
+    │   ├── skiplist.cc  
+    │   └── skiplist.h 
+    ├── sstable
+    │   ├── sstable.cc  
+    │   └── sstable.h 
+    ├── tests
+    │   ├── correctness.cc // Correctness test, you should not modify this file 
+    │   ├── persistence.cc // Persistence test, you should not modify this file
+    │   └── test.h         // Base class for testing, you should not modify this file
+    ├── utils
+    │   ├── MurmurHash3.h  // Provides murmur3 hash function
+    │   └── utils.h         // Provides some file/directory interface
+    └── vlog
+        ├── MurmurHash3.h  // Provides murmur3 hash function
+        └── utils.h         // Provides some file/directory interface
+
 ```
-
-
-First have a look at the `kvstore_api.h` file to check functions you need to implement. Then modify the `kvstore.cc` and `kvstore.h` files and feel free to add new class files.
-
-We will use all files with `.cc`, `.cpp`, `.cxx` suffixes to build correctness and persistence tests. Thus, you can use any IDE to finish this project as long as you ensure that all C++ source files are submitted.
-
-For the test files, of course you could modify it to debug your programs. But remember to change it back when you are testing.
-
-Good luck :)
-
-### About docker
-- You can create multiple containers based on the same Docker image.
----
-- First launch Docker desktop
-- list all containers `docker ps -a`
-- list all image `docker images`
-- build an image based on DockerFile (in . directory)`docker build -t lsmkv_image .`
-- create container `docker create -t -i --privileged --name lsmkv -v $(pwd):/home/stu/LSMKV lsmkv_image bash`
-- start container `docker start -a -i lsmkv`
-- git rm --cached
 
 ### Overview
 Here is the the architechture of this KVStore system.
@@ -128,3 +125,14 @@ the same offset?
 3) if it doesn't, ignore.
 4) just flush
 5) use `de_alloc_file()` to dig holes on file
+
+### About docker
+- You can create multiple containers based on the same Docker image.
+---
+- First launch Docker desktop
+- list all containers `docker ps -a`
+- list all image `docker images`
+- build an image based on DockerFile (in . directory)`docker build -t lsmkv_image .`
+- create container `docker create -t -i --privileged --name lsmkv -v $(pwd):/home/stu/LSMKV lsmkv_image bash`
+- start container `docker start -a -i lsmkv`
+- git rm --cached

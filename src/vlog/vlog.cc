@@ -78,24 +78,18 @@ void VLog::collect_garbage(uint64_t chunk_size, std::vector<GarbageEntry> &garba
     in.open(filename_, std::ios::binary);
     while (tail_ - start < chunk_size) {
         if (read_vlog_entry(in, &entry)) {
-            tail_ += entry.size();
             if (!entry.check()) {
+                tail_ += entry.size();
                 continue;
             }
-            garbage.emplace_back(entry, tail_);
+            garbage.emplace_back(entry, tail_ + 1 + 2 + 8 + 4);
+            tail_ += entry.size();
         } else {
             break;
         }
     }
     in.close();
-
-    std::ofstream out;
-    out.open(this->filename_, std::ios::app | std::ios::binary);
-    uint64_t head = out.tellp();
-    out.close();
-    printf("before de_alloc (start=%lu, size=%lu)\nlast in file is%lu\n", start, chunk_size, head);
     utils::de_alloc_file(this->filename_, start, chunk_size);
-    printf("after de_alloc start=%lu\n", utils::seek_data_block(this->filename_));
 }
 
 std::string VLog::read_value(uint64_t offset, uint32_t len) {

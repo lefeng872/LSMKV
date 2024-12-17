@@ -86,10 +86,12 @@ std::string KVStore::get(uint64_t key) const
 					}
 				}
 			}
-			if (v_len) {
-				return this->v_log_->read_value(offset, v_len);
-			} else if (!v_len && find_flag) {
-				return "";
+			if (find_flag) {
+				if (!v_len) {
+					return "";
+				} else {
+					return this->v_log_->read_value(offset, v_len);
+				}
 			}
 		}
 		return "";

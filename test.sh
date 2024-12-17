@@ -2,5 +2,5 @@ make reset
 make clean
 make
 clear
-./bin/correctness -v
+./bin/correctness
 # ./bin/main > output.txt

@@ -89,6 +89,7 @@ void VLog::collect_garbage(uint64_t chunk_size, std::vector<GarbageEntry> &garba
         }
     }
     in.close();
+    // printf("de_alloc(start=%lu, size=%lu)\n", start, chunk_size);
     utils::de_alloc_file(this->filename_, start, chunk_size);
 }
 
@@ -120,7 +121,7 @@ void VLog::reset() {
 void VLog::print() const {
     std::ifstream in;
     in.open(this->filename_, std::ios::binary);
-    while (!in.eof()) {
+    while (!in.eof() && in) {
         VLogEntry *vlog_entry = new VLogEntry();
         in.ignore(sizeof(vlog_entry->magic));
         in.read(reinterpret_cast<char *> (&vlog_entry->check_sum), sizeof(vlog_entry->check_sum));

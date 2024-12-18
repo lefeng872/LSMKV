@@ -34,9 +34,11 @@ struct SSTableTuple {
 struct SSTableTimestampTuple {
     SSTableTuple tuple;
     uint64_t timestamp;
-    SSTableTimestampTuple(uint64_t key, uint64_t offset, uint32_t v_len, uint64_t _timestamp) {
+    uint32_t level;
+    SSTableTimestampTuple(uint64_t key, uint64_t offset, uint32_t v_len, uint64_t _timestamp, uint32_t _level) {
         tuple = SSTableTuple(key, offset, v_len);
         this->timestamp = _timestamp;
+        this->level = _level;
     }
 };
 

@@ -14,12 +14,12 @@ KVStore::KVStore(const std::string &dir, const std::string &vlog) : KVStoreAPI(d
 	global_timestamp = 0;
 	std::vector<std::string> sst_directory_list;
 	utils::scanDir(sstable_dir_path_, sst_directory_list);
-	for (size_t i = 0; i < sst_directory_list.size(); ++i) {
-		std::string level_dir = sst_directory_list[i];
+	for (uint32_t i = 0; i < sst_directory_list.size(); ++i) {
+		std::string level_dir = "level-" + std::to_string(i);
 		std::vector<std::string> sst_filename_list;
 		utils::scanDir(sstable_dir_path_ + "/" + level_dir, sst_filename_list);
 		std::vector<SSTable *> sstable_list;
-		for (size_t j = 0; j < sst_filename_list.size(); ++j) {
+		for (uint32_t j = 0; j < sst_filename_list.size(); ++j) {
 			std::ifstream in;
 			in.open(sstable_dir_path_ + "/" + level_dir + "/" + sst_filename_list[j], std::ios::binary);
 			SSTable *sstable = new SSTable(in);

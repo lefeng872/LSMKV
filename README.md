@@ -44,6 +44,21 @@ Explanation of each file:
 
 ```
 
+### running
+![](image/Test.png)
+- You can create multiple containers based on the same Docker image.
+- First launch Docker desktop
+- list all containers `docker ps -a`
+- list all image `docker images`
+- build an image based on DockerFile (in . directory)`docker build -t lsmkv_image .`
+- create container `docker create -t -i --privileged --name lsmkv -v $(pwd):/home/stu/LSMKV lsmkv_image bash`
+- start container `docker start -a -i lsmkv`
+- git rm --cached
+- tmux
+    - tmux new -s lsm
+    - tmux a -t lsm
+    - ctrl+b, d
+
 ### Multi records on the same key
 Suppose we have two record, A(key1, value1), B(key1, value2). And I divide my storage system into following hierarchy
 - skiplist
@@ -118,18 +133,4 @@ the same offset?
 3) if it doesn't, ignore.
 4) just flush
 5) use `de_alloc_file()` to dig holes on file
-
-### running commands
-- You can create multiple containers based on the same Docker image.
-- First launch Docker desktop
-- list all containers `docker ps -a`
-- list all image `docker images`
-- build an image based on DockerFile (in . directory)`docker build -t lsmkv_image .`
-- create container `docker create -t -i --privileged --name lsmkv -v $(pwd):/home/stu/LSMKV lsmkv_image bash`
-- start container `docker start -a -i lsmkv`
-- git rm --cached
-- tmux
-    - tmux new -s lsm
-    - tmux a -t lsm
-    - ctrl+b, d
     

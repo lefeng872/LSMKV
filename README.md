@@ -1,10 +1,14 @@
 ## Project LSM-KV: KVStore using Log-structured Merge Tree
 
+### Overview
+Here is the the architechture of this KVStore system.
 
-The handout files include two main parts:
+![](image/overview.png)
 
-- The `KVStoreAPI` class in `kvstore_api.h` that specifies the interface of KVStore.
-- Test files including correctness test (`correctness.cc`) and persistence test (`persistence.cc`).
+It mainly consists of three part:
+- MemTable in memory, implemented with skiplist.
+- SSTables on disk, including headers, bloomfilters, keys and offsets.
+- VLog on disk, storing values.
 
 Explanation of each file:
 
@@ -39,16 +43,6 @@ Explanation of each file:
         └── utils.h         // Provides some file/directory interface
 
 ```
-
-### Overview
-Here is the the architechture of this KVStore system.
-
-![](image/overview.png)
-
-It mainly consists of three part:
-- MemTable in memory, implemented with skiplist.
-- SSTables on disk, including headers, bloomfilters, keys and offsets.
-- VLog on disk, storing values.
 
 ### Multi records on the same key
 Suppose we have two record, A(key1, value1), B(key1, value2). And I divide my storage system into following hierarchy
@@ -101,8 +95,7 @@ else
 # In last level compaction, record with vlen=0 should be thrown away
 ```
 SCAN(K1, K2), return a `std::list<K, V>`
-```pseudo
-```
+
 RESET()
 - rm sstables and level dir
 - rm vlog
@@ -126,9 +119,8 @@ the same offset?
 4) just flush
 5) use `de_alloc_file()` to dig holes on file
 
-### About docker
+### running commands
 - You can create multiple containers based on the same Docker image.
----
 - First launch Docker desktop
 - list all containers `docker ps -a`
 - list all image `docker images`
@@ -136,3 +128,8 @@ the same offset?
 - create container `docker create -t -i --privileged --name lsmkv -v $(pwd):/home/stu/LSMKV lsmkv_image bash`
 - start container `docker start -a -i lsmkv`
 - git rm --cached
+- tmux
+    - tmux new -s lsm
+    - tmux a -t lsm
+    - ctrl+b, d
+    

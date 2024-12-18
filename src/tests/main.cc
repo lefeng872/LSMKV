@@ -4,8 +4,16 @@
 #include "../utils/utils.h"
 #include <string>
 #include <fstream>
+#include <iostream>
+#include <cstdint>
+#include <cassert>
+#include <semaphore.h>
+#include <random>
+#include <signal.h>
+#include "test.h"
 
-#define TEST_MAX 1000
+const uint64_t TEST_MAX = 1024 * 32;
+const uint64_t GC_TRIGGER = 1024;
 
 void print_sstable(const std::string &filename) {
     std::ifstream in;
@@ -40,19 +48,65 @@ int main() {
     // print_vlog("data/vlog/vlog.db"); 
     // learn_read();
     KVStore store("./data/sstables", "./data/vlog/vlog.db");
-    for (uint64_t i = 0; i < TEST_MAX; ++i) {
-        store.put(i, std::string(i + 1, 's'));
-    }
-    printf("Above is after all insert \n");
-    for (uint64_t i = 0; i < TEST_MAX; i += 2) {
-        store.del(i);
-    }
-    for (uint64_t i = 0; i < TEST_MAX; ++i) {
-        if ((1 & i) != store.del(i)) {
-            printf("******del [%lu] error*******\n", i);
-        } else {
-            printf("del[%lu] is alright\n", i);
-        }
-    }
-    // store.reset(); 
+    
+		uint64_t i;
+
+		// Clean up
+		store.reset();
+
+		// Test multiple key-value pairs
+		for (i = 0; i < TEST_MAX; ++i)
+		{
+			store.put(i, std::string(i + 1, 's'));
+		}
+
+		// Test deletions
+		for (i = 0; i < TEST_MAX; i += 2)
+		{
+			store.del(i);
+
+			if ((i / 2) % 1024 == 0) [[unlikely]]
+			{
+				store.gc(16 * MB);
+			}
+		}
+
+		// Prepare data for Test Mode
+		for (i = 0; i < TEST_MAX; ++i)
+		{
+			switch (i & 3)
+			{
+			case 0:
+				if ("" != store.get(i)) {
+                    printf("wrong\n");
+                }
+				store.put(i, std::string(i + 1, 't'));
+				break;
+			case 1:
+                if (std::string(i + 1, 's') != store.get(i)) {
+                    printf("wrong\n");
+                }
+				store.put(i, std::string(i + 1, 't'));
+				break;
+			case 2:
+                if ("" != store.get(i)) {
+                    printf("wrong\n");
+                }
+				break;
+			case 3:
+                if (std::string(i + 1, 's') != store.get(i)) {
+                    printf("worng\n");
+                }
+				break;
+			default:
+				assert(0);
+			}
+
+			if (i % GC_TRIGGER == 0) [[unlikely]]
+			{
+			    store.gc(8 * MB);
+			}
+		}
+
+		store.gc(32 * MB);
 }
